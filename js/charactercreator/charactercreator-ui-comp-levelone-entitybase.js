@@ -144,14 +144,21 @@ export class StatGenUiRenderLevelOneEntityBase {
 
 		const {hrPreview} = this._getHrPreviewMeta();
 
+		// Cache bust: 2025-04-09-16-45-FORCE-UPDATE
 		const stgSel = ee`<div class="ve-flex-col ve-mt-3">
-			<div class="ve-mb-1">Select a ${this._title}</div>
+			${this._titleShort.includes(".") ? `<div class="ve-mb-1 ve-bold ve-text-large redundant-entity-selection-text">${this._titleShort.split(". ")[0] + ". Select a " + (this._titleShort.includes(".") ? this._titleShort.split(". ")[1] || this._title : this._title)}</div>` : `<div class="ve-mb-1 ve-bold ve-text-large redundant-entity-selection-text">Select a ${this._title}</div>`}
 			<div class="ve-flex-v-center ve-mb-2">
 				<div class="ve-flex-v-center ve-btn-group ve-w-100 ve-mr-2">${btnFilterForEntity}${selEntity}</div>
 				<div>${btnPreview}</div>
 			</div>
 			${stgAbilityScoreSet}
 		</div>`;
+
+		// Add horizontal divider after entity selection (always visible)
+		const divider = ee`<hr class="ve-hr-3 ve-mt-4 ve-mb-4">`;
+
+		// Position divider after preview but before next step
+		wrpOuter.appendChild(divider);
 
 		return {
 			wrpOuter,
@@ -160,6 +167,8 @@ export class StatGenUiRenderLevelOneEntityBase {
 
 			dispPreview,
 			hrPreview,
+			
+			divider,
 		};
 	}
 

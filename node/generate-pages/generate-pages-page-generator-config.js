@@ -366,16 +366,16 @@ class _PageGeneratorSearch extends PageGeneratorGeneric {
 	];
 }
 
-class _PageGeneratorStatgen extends PageGeneratorGeneric {
-	_filename = "page/template-page-statgen.hbs";
-	_page = "statgen.html";
+class _PageGeneratorCharactercreator extends PageGeneratorGeneric {
+	_filename = "page/template-page-charactercreator.hbs";
+	_page = "charactercreator.html";
 
-	_pageTitle = "Statgen";
+	_pageTitle = "Character Creator";
 	_navbarDescription = "Change method on the left, refer to method that appears on the right.";
 
 	_isFontAwesome = true;
 	_stylesheets = [
-		"statgen-bundle",
+		"charactercreator-bundle",
 	];
 
 	_scriptsUtilsAdditional = [
@@ -386,7 +386,7 @@ class _PageGeneratorStatgen extends PageGeneratorGeneric {
 	];
 
 	_scriptsModules = [
-		"statgen.js",
+		"charactercreator.js",
 	];
 }
 
@@ -415,5 +415,5 @@ export const PAGE_GENERATORS = 	[
 	new _PageGeneratorPrivacyPolicy(),
 	new _PageGeneratorRenderdemo(),
 	new _PageGeneratorSearch(),
-	new _PageGeneratorStatgen(),
+	new _PageGeneratorCharactercreator(),
 ];

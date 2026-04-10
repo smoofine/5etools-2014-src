@@ -268,7 +268,7 @@
 							"type": "link",
 							"href": {
 								"type": "internal",
-								"path": "statgen.html",
+								"path": "charactercreator.html",
 								"hash": "pointbuy"
 							},
 							"text": "Point Buy Calculator."

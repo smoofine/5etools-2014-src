@@ -1,4 +1,4 @@
-export class PageFilterClassesRaw extends PageFilterClassesBase {
+export class PageFilterClassesRaw extends PageFilterBase {
 	async _pPopulateBoxOptions (opts) {
 		await super._pPopulateBoxOptions(opts);
 		opts.isCompact = false;
@@ -553,3 +553,5 @@ export class ModalFilterClasses extends ModalFilterBase {
 		);
 	}
 }
+
+globalThis.ModalFilterClasses = ModalFilterClasses;

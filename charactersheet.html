@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<meta name="mobile-web-app-capable" content="yes">
+	
+	<title>Character Sheet - 5etools</title>
+	
+	<link rel="stylesheet" href="css/bootstrap.css">
+	<link rel="stylesheet" href="css/fontawesome.css">
+	<link rel="stylesheet" href="css/style.css">
+	<link rel="stylesheet" href="css/scrollbar.css">
+	<link rel="stylesheet" href="css/tooltip.css">
+	
+	<script type="text/javascript" src="js/jquery.js"></script>
+	<script type="text/javascript" src="js/bootstrap.js"></script>
+	<script type="text/javascript" src="js/tooltip.js"></script>
+	<script type="text/javascript" src="js/utils.js"></script>
+	<script type="text/javascript" src="js/utils-ui.js"></script>
+	<script type="text/javascript" src="js/parser.js"></script>
+	<script type="text/javascript" src="js/render.js"></script>
+</head>
+
+<body>
+	<header class="hidden-xs hidden-sm page__header">
+		<div class="container ve-flex-v-baseline">
+			<h1 class="page__title ve-no-wrap ve-my-0" id="page__title">Character Sheet</h1>
+			<p class="page__subtitle ve-no-wrap ve-my-0" id="page__subtitle">Load and view your statgen characters.</p>
+		</div>
+	</header>
+
+	<div class="container">
+		<div class="ve-flex">
+			<div class="ve-sidebar">
+				<!-- File Operations -->
+				<div class="ve-sidebar-section">
+					<h3 class="ve-sidebar-header">Character File</h3>
+					<div class="ve-sidebar-content">
+						<div class="ve-form-group ve-mb-3">
+							<label class="ve-bold ve-mb-1 ve-small">Load Character</label>
+							<input type="file" id="file-input" accept=".json" class="ve-form-control">
+							<button id="load-btn" class="ve-btn ve-btn-primary ve-btn-block ve-mt-2">Load Character</button>
+						</div>
+						<div class="ve-form-group ve-mb-3">
+							<button id="save-btn" class="ve-btn ve-btn-success ve-btn-block">Save Changes</button>
+							<button id="export-btn" class="ve-btn ve-btn-default ve-btn-block ve-mt-2">Export JSON</button>
+						</div>
+						<div class="ve-form-group ve-mb-3">
+							<button id="clear-btn" class="ve-btn ve-btn-danger ve-btn-block">Clear Character</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- Edit Mode Toggle -->
+				<div class="ve-sidebar-section">
+					<h3 class="ve-sidebar-header">Edit Mode</h3>
+					<div class="ve-sidebar-content">
+						<div class="ve-form-group">
+							<label class="ve-checkbox-label">
+								<input type="checkbox" id="edit-mode-toggle">
+								<span>Enable Editing</span>
+							</label>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="ve-main">
+				<!-- Character Sheet Content -->
+				<div id="character-sheet" class="ve-flex-col ve-p-4">
+					<!-- Character sheet will be rendered here -->
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script type="module" src="js/utils-brew.js"></script>
+	<script type="module" src="js/utils-config.js"></script>
+	<script type="text/javascript" defer src="js/filter-common.js"></script>
+	<script type="text/javascript" defer src="js/filter-races.js"></script>
+	<script type="text/javascript" defer src="js/filter-backgrounds.js"></script>
+	<script type="text/javascript" defer src="js/filter-feats.js"></script>
+	<script type="text/javascript" defer src="js/render.js"></script>
+	<script type="text/javascript" defer src="js/render-dice.js"></script>
+	<script type="module" src="js/shim-esmodules.js"></script>
+	<script type="text/javascript" defer src="js/hist.js"></script>
+	<script type="module" src="js/charactersheet.js"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import {StatGenUi} from "./statgen/statgen-ui.js";
+import {StatGenUi} from "./charactercreator/charactercreator-ui.js";
 
 class StatGenPage {
 	constructor () {
@@ -12,16 +12,20 @@ class StatGenPage {
 			BrewUtil2.pInit(),
 		]);
 		await ExcludeUtil.pInitialise();
-		const [races, backgrounds, feats] = await Promise.all([
+		const [races, backgrounds, classes, feats, languages] = await Promise.all([
 			await this._pLoadRaces(),
 			await this._pLoadBackgrounds(),
+			await this._pLoadClasses(),
 			await this._pLoadFeats(),
+			await this._pLoadLanguages(),
 		]);
 
 		this._statGenUi = new StatGenUi({
 			races,
 			backgrounds,
+			classes,
 			feats,
+			languages,
 			tabMetasAdditional: this._getAdditionalTabMetas(),
 		});
 		await this._statGenUi.pInit();
@@ -134,6 +138,30 @@ class StatGenPage {
 			.filter(it => {
 				const hash = UrlUtil.URL_TO_HASH_BUILDER[UrlUtil.PG_BACKGROUNDS](it);
 				return !ExcludeUtil.isExcluded(hash, "background", it.source);
+			});
+	}
+
+	async _pLoadClasses () {
+		return [
+			...(await DataUtil.class.loadJSON()).class,
+			...((await PrereleaseUtil.pGetBrewProcessed()).class || []),
+			...((await BrewUtil2.pGetBrewProcessed()).class || []),
+		]
+			.filter(it => {
+				const hash = UrlUtil.URL_TO_HASH_BUILDER[UrlUtil.PG_CLASSES](it);
+				return !ExcludeUtil.isExcluded(hash, "class", it.source);
+			});
+	}
+
+	async _pLoadLanguages () {
+		return [
+			...(await DataUtil.loadJSON("data/languages.json")).language,
+			...((await PrereleaseUtil.pGetBrewProcessed()).language || []),
+			...((await BrewUtil2.pGetBrewProcessed()).language || []),
+		]
+			.filter(it => {
+				const hash = UrlUtil.URL_TO_HASH_BUILDER[UrlUtil.PG_LANGUAGES](it);
+				return !ExcludeUtil.isExcluded(hash, "language", it.source);
 			});
 	}
 

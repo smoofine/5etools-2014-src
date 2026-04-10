@@ -1,8 +1,10 @@
-import {StatGenUiCompAsi} from "./statgen-ui-comp-asi.js";
-import {StatGenUiRenderLevelOneBackground} from "./statgen-ui-comp-levelone-background.js";
-import {StatGenUiRenderLevelOneRace} from "./statgen-ui-comp-levelone-race.js";
-import {StatGenUiRenderableCollectionPbRules} from "./statgen-ui-comp-pbrules.js";
-import {MAX_CUSTOM_FEATS, MODE_NONE} from "./statgen-ui-consts.js";
+import {StatGenUiCompAsi} from "./charactercreator-ui-comp-asi.js";
+import {StatGenUiRenderLevelOneBackground} from "./charactercreator-ui-comp-levelone-background.js";
+import {StatGenUiRenderLevelOneClass} from "./charactercreator-ui-comp-levelone-class.js";
+import {StatGenUiRenderLevelOneRace} from "./charactercreator-ui-comp-levelone-race.js";
+import {StatGenUiRenderableCollectionPbRules} from "./charactercreator-ui-comp-pbrules.js";
+import {MAX_CUSTOM_FEATS, MODE_NONE} from "./charactercreator-ui-consts.js";
+
 
 export class StatGenUi extends BaseComponent {
 	static _STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
@@ -34,12 +36,14 @@ export class StatGenUi extends BaseComponent {
 	 * @param opts
 	 * @param opts.races
 	 * @param opts.backgrounds
+	 * @param opts.classes
 	 * @param opts.feats
 	 * @param [opts.tabMetasAdditional]
 	 * @param [opts.isCharacterMode] Disables some functionality (e.g. changing number of ability scores)
 	 * @param [opts.isFvttMode]
 	 * @param [opts.modalFilterRaces]
 	 * @param [opts.modalFilterBackgrounds]
+	 * @param [opts.modalFilterClasses]
 	 * @param [opts.modalFilterFeats]
 	 * @param [opts.existingScores]
 	 */
@@ -51,7 +55,9 @@ export class StatGenUi extends BaseComponent {
 
 		this._races = opts.races;
 		this._backgrounds = opts.backgrounds;
+		this._classes = opts.classes;
 		this._feats = opts.feats;
+		this._languages = opts.languages;
 		this._tabMetasAdditional = opts.tabMetasAdditional;
 		this._isCharacterMode = opts.isCharacterMode;
 		this._isFvttMode = opts.isFvttMode;
@@ -75,6 +81,7 @@ export class StatGenUi extends BaseComponent {
 
 		this._modalFilterRaces = opts.modalFilterRaces || new ModalFilterRaces({namespace: "statgen.races", isRadio: true, allData: this._races});
 		this._modalFilterBackgrounds = opts.modalFilterBackgrounds || new ModalFilterBackgrounds({namespace: "statgen.backgrounds", isRadio: true, allData: this._backgrounds});
+		this._modalFilterClasses = opts.modalFilterClasses || null; // No modal filter needed for classes
 		this._modalFilterFeats = opts.modalFilterFeats || new ModalFilterFeats({namespace: "statgen.feats", isRadio: true, allData: this._feats});
 
 		this._isLevelUp = !!opts.existingScores;
@@ -120,11 +127,13 @@ export class StatGenUi extends BaseComponent {
 		this._state[propIxFeat] = ixFeat;
 	}
 
+	// Feat set management functionality
 	setIxFeatSet (namespace, ixSet) {
 		const {propIxSel} = this.getPropsAdditionalFeats_(namespace);
 		this._state[propIxSel] = ixSet;
 	}
 
+	// Feat set index management for additional feats
 	setIxFeatSetIxFeats (namespace, featsAdditionType, metaFeats) {
 		const nxtState = {};
 		metaFeats.forEach(({ix, ixFeat}) => {
@@ -144,7 +153,18 @@ export class StatGenUi extends BaseComponent {
 	get ixBackground () { return this._state.common_ixBackground; }
 	set ixBackground (ixBackground) { this._state.common_ixBackground = ixBackground; }
 
+	addHookIxClass (hook) { this._addHookBase("common_ixClass", hook); }
+	get ixClass () { return this._state.common_ixClass; }
+	set ixClass (ixClass) { this._state.common_ixClass = ixClass; }
+
+// =================================================================================================
+// REGION: TEAL (#138774) - Additional Feats
+// Custom feat management and additional feat functionality
+// =================================================================================================
+
+	// Add custom feat functionality
 	addCustomFeat () { this._state.common_cntFeatsCustom = Math.min(MAX_CUSTOM_FEATS, (this._state.common_cntFeatsCustom || 0) + 1); }
+	// Set custom feat count functionality
 	setCntCustomFeats (val) { this._state.common_cntFeatsCustom = Math.min(MAX_CUSTOM_FEATS, val || 0); }
 	// endregion
 
@@ -158,6 +178,8 @@ export class StatGenUi extends BaseComponent {
 	proxyAssignSimple (hookProp, toObj, isOverwrite) { return this._proxyAssignSimple(hookProp, toObj, isOverwrite); }
 	get race () { return this._races[this._state.common_ixRace]; }
 	get background () { return this._backgrounds[this._state.common_ixBackground]; }
+	get class () { return this._classes[this._state.common_ixClass]; }
+	get languages () { return this._languages; }
 	get isLevelUp () { return this._isLevelUp; }
 	isSettingStateFromOverwrite () { return this._isSettingStateFromOverwrite; }
 	// endregion
@@ -200,6 +222,7 @@ export class StatGenUi extends BaseComponent {
 	async pInit () {
 		await this._modalFilterRaces.pPopulateHiddenWrapper();
 		await this._modalFilterBackgrounds.pPopulateHiddenWrapper();
+		if (this._modalFilterClasses) await this._modalFilterClasses.pPopulateHiddenWrapper();
 		await this._modalFilterFeats.pPopulateHiddenWrapper();
 	}
 
@@ -252,6 +275,11 @@ export class StatGenUi extends BaseComponent {
 		return rolls.map(r => ({total: r.total, txt: (r.text || []).join("")}));
 	}
 
+// =================================================================================================
+// REGION: RED (#7C1414) - Stat Generation Method Tabs
+// Creates tabs for selecting different stat generation methods (Roll, Standard Array, Point Buy, Manual)
+// =================================================================================================
+
 	render (parent) {
 		parent.empty().addClass("ve-statgen");
 
@@ -261,11 +289,11 @@ export class StatGenUi extends BaseComponent {
 				...this._tabMetasAdditional || [],
 			]
 			: [
-				this._isFvttMode ? new TabUiUtil.TabMeta({name: "Select...", icon: this._isFvttMode ? `fas fa-fw fa-square` : `far fa-fw fa-square`, hasBorder: true, isNoPadding: this._isFvttMode}) : null,
-				new TabUiUtil.TabMeta({name: "Roll", icon: this._isFvttMode ? `fas fa-fw fa-dice` : `far fa-fw fa-dice`, hasBorder: true, isNoPadding: this._isFvttMode}),
-				new TabUiUtil.TabMeta({name: "Standard Array", icon: this._isFvttMode ? `fas fa-fw fa-signal` : `far fa-fw fa-signal-bars`, hasBorder: true, isNoPadding: this._isFvttMode}),
-				new TabUiUtil.TabMeta({name: "Point Buy", icon: this._isFvttMode ? `fas fa-fw fa-chart-bar` : `far fa-fw fa-chart-bar`, hasBorder: true, isNoPadding: this._isFvttMode}),
-				new TabUiUtil.TabMeta({name: "Manual", icon: this._isFvttMode ? `fas fa-fw fa-screwdriver-wrench` : `far fa-fw fa-screwdriver-wrench`, hasBorder: true, isNoPadding: this._isFvttMode}),
+				this._isFvttMode ? new TabUiUtil.TabMeta({name: "", icon: this._isFvttMode , hasBorder: false, isNoPadding: this._isFvttMode}) : null,
+				new TabUiUtil.TabMeta({name: "", icon: this._isFvttMode , hasBorder: false, isNoPadding: this._isFvttMode}),
+				new TabUiUtil.TabMeta({name: "", icon: this._isFvttMode , hasBorder: false, isNoPadding: this._isFvttMode}),
+				new TabUiUtil.TabMeta({name: "", icon: this._isFvttMode , hasBorder: false, isNoPadding: this._isFvttMode}),
+				new TabUiUtil.TabMeta({name: "", icon: this._isFvttMode , hasBorder: false, isNoPadding: this._isFvttMode}),
 				...this._tabMetasAdditional || [],
 			].filter(Boolean);
 
@@ -308,6 +336,12 @@ export class StatGenUi extends BaseComponent {
 		this._addHookBase("common_cntFeatsCustom", () => this._state.common_pulseAsi = !this._state.common_pulseAsi);
 	}
 
+// =================================================================================================
+// REGION: ORANGE (#803A18) - Method Display Areas
+// Displays the controls for each selected stat generation method
+// =================================================================================================
+
+	// Roll method display - shows formula input, roll count, results, and random assignment
 	_render_getStgRolledHeader () {
 		this._rollIptFormula = ComponentUiUtil.getIptStr(this, "rolled_formula")
 			.addClass("ve-text-center")
@@ -380,6 +414,7 @@ export class StatGenUi extends BaseComponent {
 		</div>`;
 	}
 
+	// Standard Array method display - shows the standard array values and random assignment
 	_render_getStgArrayHeader () {
 		const btnRandom = ee`<button class="ve-btn ve-btn-xs ve-btn-default">Randomly Assign</button>`
 			.onn("click", () => {
@@ -397,12 +432,19 @@ export class StatGenUi extends BaseComponent {
 		</div>`;
 	}
 
+	// Manual method display - shows instructions for manual stat entry
 	_render_getStgManualHeader () {
 		return ee`<div class="ve-flex-col ve-mb-3 ve-mr-auto">
 			<div>Enter your desired ability scores in the &quot;Base&quot; column below.</div>
 		</div>`;
 	}
 
+// =================================================================================================
+// REGION: BLUE (#151D7D) - Utility Buttons
+// Save to file, load from file, copy link, and reset all functionality
+// =================================================================================================
+
+	// Reset functionality for current method
 	_doReset () {
 		if (this._isLevelUp) return; // Should never occur
 
@@ -419,10 +461,12 @@ export class StatGenUi extends BaseComponent {
 		this._proxyAssignSimple("state", nxtState);
 	}
 
+	// Reset all functionality - resets entire form to default state
 	doResetAll () {
 		this._proxyAssignSimple("state", this._getDefaultState(), true);
 	}
 
+	// Point Buy method display - shows budget, remaining points, reset and random buttons
 	_render_getStgPbHeader () {
 		const iptBudget = ComponentUiUtil.getIptInt(
 			this,
@@ -524,6 +568,7 @@ export class StatGenUi extends BaseComponent {
 		</div>`;
 	}
 
+	// Point Buy custom rules display - shows cost customization interface
 	_render_getStgPbCustom () {
 		const btnAddLower = ee`<button class="ve-btn ve-btn-default ve-btn-xs">Add Lower Score</button>`
 			.onn("click", () => {
@@ -696,6 +741,31 @@ export class StatGenUi extends BaseComponent {
 		this._render_isLevelOne(wrpTab);
 	}
 
+// =================================================================================================
+// REGION: GREEN (#138713, #134F13, #133813) - Stat Selection System
+// Base stats, race stats, user stats, total stats, and modifiers
+// =================================================================================================
+
+	// Create radio button selector for stat generation methods
+	_renderModeSelector (methodTabs) {
+		const modeSelector = ee`<div class="ve-flex ve-w-100 ve-pb-2"></div>`;
+		
+		methodTabs.forEach((tabMeta) => {
+			const radioLabel = ee`<label class="ve-flex-v-center ve-mr-5 ve-statgen-mode-selector">
+				<input type="radio" name="statgen-mode" value="${tabMeta.ix}" class="ve-mr-2" ${tabMeta.ix === (this.ixActiveTab || 0) ? 'checked' : ''}>
+				<span>${tabMeta.name}</span>
+			</label>`;
+			
+			radioLabel.onn('click', () => {
+				this.ixActiveTab = tabMeta.ix;
+			});
+			
+			modeSelector.append(radioLabel);
+		});
+		
+		return modeSelector;
+	}
+
 	_render_isLevelOne (wrpTab) {
 		let stgNone;
 		let stgMain;
@@ -759,6 +829,8 @@ export class StatGenUi extends BaseComponent {
 		this._addHookActiveTab(hkRolledOrArray);
 		hkRolledOrArray();
 
+		// Create base stat input controls for each ability (STR, DEX, CON, INT, WIS, CHA)
+		// This handles all the different input methods (rolled, array, point buy, manual)
 		const wrpsBase = Parser.ABIL_ABVS.map(ab => {
 			// region Rolled
 			const {propAbilSelectedRollIx} = this.constructor._rolled_getProps(ab);
@@ -886,6 +958,7 @@ export class StatGenUi extends BaseComponent {
 
 		const metasTotalAndMod = this._render_getMetasTotalAndMod();
 
+		// Race selection component - handles race stat increases
 		const {
 			wrpOuter: wrpRaceOuter,
 			stgSel: stgRaceSel,
@@ -894,6 +967,18 @@ export class StatGenUi extends BaseComponent {
 			dispTashas,
 		} = this._renderLevelOneRace.render();
 
+		// Class selection component - handles class stat increases
+		const {
+			wrpOuter: wrpClassOuter,
+			stgSel: stgClassSel,
+			dispPreview: dispPreviewClass,
+			hrPreview: hrPreviewClass,
+			dispSubclass,
+			dispSkills,
+			dispEquipment,
+		} = this._renderLevelOneClass.render();
+
+		// Background selection component - handles background stat increases
 		const {
 			wrpOuter: wrpBackgroundOuter,
 			stgSel: stgBackgroundSel,
@@ -908,12 +993,50 @@ export class StatGenUi extends BaseComponent {
 		</div>`;
 
 		stgMain = ee`<div class="ve-flex-col ve-w-100 ve-h-100">
-			${stgRolledHeader}
-			${stgArrayHeader}
-			${stgManualHeader}
-
+			<!-- 1. Choose a Race Section -->
 			<div class="ve-flex ve-mobile-lg__flex-col ve-w-100 ve-px-3">
 				<div class="ve-flex-col">
+					<h4 class="ve-my-2 ve-bold">1. Choose a Race</h4>
+					${stgRaceSel}
+					${dispPreviewRace}
+					${hrPreviewRaceTashas}
+					${dispTashas}
+				</div>
+			</div>
+
+			<hr class="ve-hr-3">
+
+			<!-- 2. Choose a Class Section -->
+			<div class="ve-flex ve-mobile-lg__flex-col ve-w-100 ve-px-3">
+				<div class="ve-flex-col">
+					<h4 class="ve-my-2 ve-bold">2. Choose a Class</h4>
+					${stgClassSel}
+					${dispPreviewClass}
+					${hrPreviewClass}
+					${dispSubclass}
+					${dispSkills}
+					${dispEquipment}
+				</div>
+			</div>
+
+			<hr class="ve-hr-3">
+
+			<!-- 3. Determine Ability scores Section -->
+			<div class="ve-flex ve-mobile-lg__flex-col ve-w-100 ve-px-3">
+				<div class="ve-flex-col">
+					<h4 class="ve-my-2 ve-bold">3. Determine Ability scores</h4>
+					<div class="ve-small ve-muted ve-italic ve-mb-2">Choose a method in this section to determine your character's ability scores.</div>
+					${this._renderModeSelector([
+						{name: "Roll", ix: this._IX_TAB_ROLLED},
+						{name: "Standard Array", ix: this._IX_TAB_ARRAY},
+						{name: "Point Buy", ix: this._IX_TAB_PB},
+						{name: "Manual", ix: this._IX_TAB_MANUAL},
+					])}
+
+					${stgRolledHeader}
+					${stgArrayHeader}
+					${stgManualHeader}
+
 					${stgPbHeader}
 
 					<div class="ve-flex">
@@ -931,6 +1054,7 @@ export class StatGenUi extends BaseComponent {
 						</div>
 
 						${wrpRaceOuter}
+						${wrpClassOuter}
 						${wrpBackgroundOuter}
 
 						<div class="ve-flex-col ve-mr-3">
@@ -951,9 +1075,6 @@ export class StatGenUi extends BaseComponent {
 							${metasTotalAndMod.map(it => it.wrpIptMod)}
 						</div>
 					</div>
-
-					${stgRaceSel}
-					${stgBackgroundSel}
 				</div>
 
 				${vrPbCustom}
@@ -964,12 +1085,91 @@ export class StatGenUi extends BaseComponent {
 
 			<hr class="ve-hr-3">
 
-			${dispPreviewRace}
-			${hrPreviewRaceTashas}
-			${dispTashas}
+			<!-- 4. Describe your Character Section -->
+			<div class="ve-flex ve-mobile-lg__flex-col ve-w-100 ve-px-3">
+				<div class="ve-flex-col">
+					<h4 class="ve-my-2 ve-bold">4. Describe your Character</h4>
+					
+					<!-- Character Information Fields -->
+					<div class="ve-flex-col ve-mb-4">
+						<div class="ve-mb-3">
+							<label class="ve-flex-v-center ve-mb-1">
+								<div class="ve-mr-2 ve-no-shrink" style="width: 120px;">Character Name:</div>
+								<input class="ve-form-control form-control--minimal" type="text" placeholder="Enter character name">
+							</label>
+							<label class="ve-flex-v-center ve-mb-1">
+								<div class="ve-mr-2 ve-no-shrink" style="width: 120px;">Player Name:</div>
+								<input class="ve-form-control form-control--minimal" type="text" placeholder="Enter player name">
+							</label>
+						</div>
+						
+						<div class="ve-mb-3">
+							<label class="ve-flex-v-center ve-mb-1">
+								<div class="ve-mr-2 ve-no-shrink" style="width: 120px;">Alignment:</div>
+								<select class="ve-form-control form-control--minimal">
+									<option value="">Select alignment</option>
+									<option value="LG">Lawful Good</option>
+									<option value="NG">Neutral Good</option>
+									<option value="CG">Chaotic Good</option>
+									<option value="LN">Lawful Neutral</option>
+									<option value="N">True Neutral</option>
+									<option value="CN">Chaotic Neutral</option>
+									<option value="LE">Lawful Evil</option>
+									<option value="NE">Neutral Evil</option>
+									<option value="CE">Chaotic Evil</option>
+									<option value="U">Unaligned</option>
+								</select>
+							</label>
+						</div>
+						
+						<div class="ve-flex ve-mobile-lg__flex-col">
+							<div class="ve-flex-col ve-mb-2">
+							<label class="ve-flex-v-center ve-mb-1" style="width: 250px;">
+								<div class="ve-mr-2 ve-no-shrink" style="width: 120px;">Faction:</div>
+								<input class="ve-form-control form-control--minimal" type="text" placeholder="Enter faction" style="width: 200px;">
+							</label>
+							<label class="ve-flex-v-center ve-mb-1" style="width: 250px;">
+								<div class="ve-mr-2 ve-no-shrink" style="width: 120px;">Age:</div>
+								<input class="ve-form-control form-control--minimal" type="text" placeholder="Enter age">
+							</label>
+						</div>
+							<div class="ve-flex-col ve-mb-2">
+							<label class="ve-flex-v-center ve-mb-1" style="width: 250px;">
+								<div class="ve-mr-2 ve-no-shrink" style="width: 120px;">Height:</div>
+								<input class="ve-form-control form-control--minimal" type="text" placeholder="Enter height">
+							</label>
+							<label class="ve-flex-v-center ve-mb-1">
+								<div class="ve-mr-2 ve-no-shrink" style="width: 120px;">Skin:</div>
+								<input class="ve-form-control form-control--minimal" type="text" placeholder="Enter skin description" style="width: 200px;">
+							</label>
+							<label class="ve-flex-v-center ve-mb-1">
+								<div class="ve-mr-2 ve-no-shrink" style="width: 120px;">Hair:</div>
+								<input class="ve-form-control form-control--minimal" type="text" placeholder="Enter hair description" style="width: 200px;">
+							</label>
+						</div>
+						</div>
+					</div>
+					
+					${stgBackgroundSel}
+					${dispPreviewBackground}
+					${hrPreviewBackground}
+				</div>
+			</div>
 
-			${dispPreviewBackground}
-			${hrPreviewBackground}
+			<hr class="ve-hr-3">
+
+			<!-- 5. Choose Equipment Section (Placeholder) -->
+			<div class="ve-flex ve-mobile-lg__flex-col ve-w-100 ve-px-3">
+				<div class="ve-flex-col">
+					<h4 class="ve-my-2 ve-bold">5. Choose Equipment</h4>
+					<div class="ve-flex-col ve-muted ve-italic">
+						<div>Equipment selection will be implemented here.</div>
+						<div class="ve-small ve-mt-1">This section will include weapons, armor, tools, and other starting equipment based on class and background.</div>
+					</div>
+				</div>
+			</div>
+
+			<hr class="ve-hr-3">
 
 			${wrpAsi}
 		</div>`;
@@ -981,8 +1181,26 @@ export class StatGenUi extends BaseComponent {
 			.appends(stgNone);
 	}
 
+// =================================================================================================
+// REGION: YELLOW (#878513) - Race Selection
+// Dropdown menu for race selection, eye icon for race rendering, ability score increase options
+// =================================================================================================
+
+	// Initialize race rendering component
 	_renderLevelOneRace = new StatGenUiRenderLevelOneRace({parent: this});
 
+// =================================================================================================
+// REGION: PURPLE (#6B46C1) - Class Selection
+
+	// Initialize class rendering component
+	_renderLevelOneClass = new StatGenUiRenderLevelOneClass({parent: this});
+
+// =================================================================================================
+// REGION: PINK (#861387) - Background Selection
+// Dropdown menu for background selection, eye icon for background rendering
+// =================================================================================================
+
+	// Initialize background rendering component
 	_renderLevelOneBackground = new StatGenUiRenderLevelOneBackground({parent: this});
 
 	_render_isLevelUp (wrpTab) {
@@ -1040,6 +1258,7 @@ export class StatGenUi extends BaseComponent {
 		`;
 	}
 
+	// User stat input controls - allows entering custom stat bonuses
 	_render_getWrpsUser () {
 		return Parser.ABIL_ABVS.map(ab => {
 			const {propUserBonus} = this.constructor._common_getProps(ab);
@@ -1056,6 +1275,7 @@ export class StatGenUi extends BaseComponent {
 		});
 	}
 
+	// Total and modifier display - calculates and shows final stats and ability modifiers
 	_render_getMetasTotalAndMod () {
 		return Parser.ABIL_ABVS.map(ab => {
 			const iptTotal = ee`<input class="ve-form-control form-control--minimal ve-statgen-shared__ipt ve-text-center" type="text" readonly>`;
@@ -1100,6 +1320,12 @@ export class StatGenUi extends BaseComponent {
 		});
 	}
 
+// =================================================================================================
+// REGION: PURPLE (#601387) - Ability Score Increases (ASI)
+// ASI component for managing ability score increases and feats
+// =================================================================================================
+
+	// ASI component wrapper - renders the ASI management interface
 	_render_getWrpAsi () {
 		const wrpAsi = ee`<div class="ve-flex-col ve-w-100"></div>`;
 		this._compAsi.render(wrpAsi);
@@ -1181,6 +1407,16 @@ export class StatGenUi extends BaseComponent {
 
 	_pb_getBackgroundAbility () {
 		return this._pb_getBackgroundAbilityList()?.[this._state.common_ixAbilityScoreSetBackground || 0];
+	}
+
+	_pb_getClassAbilityList () {
+		const classData = this.class;
+		if (!classData?.ability?.length) return null;
+		return classData.ability;
+	}
+
+	_pb_getClassAbility () {
+		return this._pb_getClassAbilityList()?.[this._state.common_ixAbilityScoreSetClass || 0];
 	}
 
 	_pb_getPointsRemaining (baseState) {
@@ -1267,6 +1503,7 @@ export class StatGenUi extends BaseComponent {
 		return total;
 	}
 
+	// Save/load state functionality and URL hash management
 	getSaveableState () {
 		const out = super.getSaveableState();
 

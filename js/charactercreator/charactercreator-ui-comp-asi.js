@@ -1,6 +1,5 @@
-import {StatGenUtilAdditionalFeats} from "./statgen-util-additionalfeats.js";
-import {MAX_CUSTOM_FEATS} from "./statgen-ui-consts.js";
-import {VetoolsConfig} from "../utils-config/utils-config-config.js";
+import {StatGenUtilAdditionalFeats} from "./charactercreator-util-additionalfeats.js";
+import {MAX_CUSTOM_FEATS} from "./charactercreator-ui-consts.js";
 import {SITE_STYLE__CLASSIC} from "../consts.js";
 
 export class StatGenUiCompAsi extends BaseComponent {
@@ -460,14 +459,12 @@ export class StatGenUiCompAsi extends BaseComponent {
 		const wrpRowsBackground = ee`<div class="ve-flex-col ve-w-100 ve-overflow-y-auto"></div>`;
 		const wrpRowsCustom = ee`<div class="ve-flex-col ve-w-100 ve-overflow-y-auto"></div>`;
 
-		this._render_renderAsiFeatSection("common_cntAsi", "ability", wrpRowsAsi);
 		this._render_renderAsiFeatSection("common_cntFeatsCustom", "custom", wrpRowsCustom);
 		this._render_renderAdditionalFeatSection({propEntity: "common_ixRace", namespace: "race", wrpRows: wrpRowsRace});
 		this._render_renderAdditionalFeatSection({propEntity: "common_ixBackground", namespace: "background", wrpRows: wrpRowsBackground});
 
 		const getStgEntity = ({title, wrpRows, propEntity, propIxEntity}) => {
 			const stg = ee`<div class="ve-flex-col">
-				<hr class="ve-hr-3 ve-hr--dotted">
 				<h4 class="ve-my-2 ve-bold">${title} Feats</h4>
 				${wrpRows}
 			</div>`;
@@ -491,16 +488,12 @@ export class StatGenUiCompAsi extends BaseComponent {
 		wrpCountFeatsCustom.addClass("ve-w-100p");
 
 		ee(wrpAsi)`
-			<h4 class="ve-my-2 ve-bold">Ability Score Increases</h4>
-			${this._render_getStageCntAsi()}
-			${wrpRowsAsi}
-
 			${stgRace}
 
 			${stgBackground}
 
-			<hr class="ve-hr-3 ve-hr--dotted">
-			<h4 class="ve-my-2 ve-bold">Additional Feats</h4>
+			<h4 class="ve-my-2 ve-bold">Optional Feat</h4>
+			<div class="ve-small ve-muted ve-italic ve-mb-2">If your DM allows it</div>
 			<label class="ve-w-100 ve-flex-v-center ve-mb-2">
 				<div class="ve-mr-2 ve-no-shrink">Number of additional feats:</div>${wrpCountFeatsCustom}
 			</label>

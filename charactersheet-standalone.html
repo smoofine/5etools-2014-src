@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<meta name="mobile-web-app-capable" content="yes">
+	
+	<title>Character Sheet - 5etools</title>
+	
+	<style>
+		/* Basic 5etools-style CSS */
+		.ve-flex { display: flex; }
+		.ve-flex-col { flex-direction: column; }
+		.ve-flex-wrap { flex-wrap: wrap; }
+		.ve-flex-v-center { align-items: center; }
+		.ve-flex-h-center { justify-content: center; }
+		.ve-flex-h-right { justify-content: flex-end; }
+		.ve-flex-vh-center { align-items: center; justify-content: center; }
+		.ve-justify-between { justify-content: space-between; }
+		.ve-gap-3 { gap: 0.75rem; }
+		.ve-mb-3 { margin-bottom: 0.75rem; }
+		.ve-mb-4 { margin-bottom: 1rem; }
+		.ve-mt-2 { margin-top: 0.5rem; }
+		.ve-mr-3 { margin-right: 0.75rem; }
+		.ve-p-3 { padding: 0.75rem; }
+		.ve-p-4 { padding: 1rem; }
+		.ve-p-5 { padding: 1.25rem; }
+		.ve-py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+		.ve-py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+		.ve-px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+		.ve-border-bottom { border-bottom: 1px solid #dee2e6; }
+		.ve-border-top { border-top: 1px solid #dee2e6; }
+		.ve-text-center { text-align: center; }
+		.ve-bold { font-weight: bold; }
+		.ve-muted { color: #6c757d; }
+		.ve-small { font-size: 0.875em; }
+		.ve-no-wrap { white-space: nowrap; }
+		.ve-my-0 { margin-top: 0; margin-bottom: 0; }
+		.ve-w-100 { width: 100%; }
+		.ve-h-100 { height: 100%; }
+		.ve-sidebar { width: 250px; min-width: 250px; }
+		.ve-main { flex: 1; }
+		.ve-sidebar-section { margin-bottom: 1rem; }
+		.ve-sidebar-header { font-weight: bold; margin-bottom: 0.5rem; padding: 0.5rem; background: #f8f9fa; border: 1px solid #dee2e6; }
+		.ve-sidebar-content { padding: 0.5rem; }
+		.ve-form-group { margin-bottom: 1rem; }
+		.ve-form-control { 
+			display: block; width: 100%; padding: 0.375rem 0.75rem; 
+			font-size: 1rem; line-height: 1.5; color: #495057; 
+			background-color: #fff; border: 1px solid #ced4da; border-radius: 0.25rem;
+		}
+		.ve-btn { 
+			display: inline-block; padding: 0.375rem 0.75rem; margin-bottom: 0;
+			font-size: 1rem; font-weight: 400; text-align: center; 
+			white-space: nowrap; vertical-align: middle; cursor: pointer;
+			user-select: none; border: 1px solid transparent; border-radius: 0.25rem;
+			text-decoration: none;
+		}
+		.ve-btn-primary { color: #fff; background-color: #007bff; border-color: #007bff; }
+		.ve-btn-success { color: #fff; background-color: #28a745; border-color: #28a745; }
+		.ve-btn-danger { color: #fff; background-color: #dc3545; border-color: #dc3545; }
+		.ve-btn-default { color: #212529; background-color: #f8f9fa; border-color: #f8f9fa; }
+		.ve-btn-block { display: block; width: 100%; }
+		.ve-checkbox-label { display: flex; align-items: center; gap: 0.5rem; }
+		.container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+		.page__header { background: #343a40; color: white; padding: 1rem 0; margin-bottom: 2rem; }
+		.page__title { font-size: 2rem; margin: 0; }
+		.page__subtitle { font-size: 1rem; margin: 0; opacity: 0.8; }
+		body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+		label { display: block; margin-bottom: 0.5rem; }
+		input, select { margin-bottom: 0.5rem; }
+	</style>
+</head>
+
+<body>
+	<header class="page__header">
+		<div class="container ve-flex-v-center">
+			<h1 class="page__title ve-no-wrap ve-my-0" id="page__title">Character Sheet</h1>
+			<p class="page__subtitle ve-no-wrap ve-my-0" id="page__subtitle">Load and view your statgen characters.</p>
+		</div>
+	</header>
+
+	<div class="container">
+		<div class="ve-flex">
+			<div class="ve-sidebar">
+				<!-- File Operations -->
+				<div class="ve-sidebar-section">
+					<h3 class="ve-sidebar-header">Character File</h3>
+					<div class="ve-sidebar-content">
+						<div class="ve-form-group ve-mb-3">
+							<label class="ve-bold ve-mb-1 ve-small">Load Character</label>
+							<input type="file" id="file-input" accept=".json" class="ve-form-control">
+							<button id="load-btn" class="ve-btn ve-btn-primary ve-btn-block ve-mt-2">Load Character</button>
+						</div>
+						<div class="ve-form-group ve-mb-3">
+							<button id="save-btn" class="ve-btn ve-btn-success ve-btn-block">Save Changes</button>
+							<button id="export-btn" class="ve-btn ve-btn-default ve-btn-block ve-mt-2">Export JSON</button>
+						</div>
+						<div class="ve-form-group ve-mb-3">
+							<button id="clear-btn" class="ve-btn ve-btn-danger ve-btn-block">Clear Character</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- Edit Mode Toggle -->
+				<div class="ve-sidebar-section">
+					<h3 class="ve-sidebar-header">Edit Mode</h3>
+					<div class="ve-sidebar-content">
+						<div class="ve-form-group">
+							<label class="ve-checkbox-label">
+								<input type="checkbox" id="edit-mode-toggle">
+								<span>Enable Editing</span>
+							</label>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="ve-main">
+				<!-- Character Sheet Content -->
+				<div id="character-sheet" class="ve-flex-col ve-p-4">
+					<!-- Character sheet will be rendered here -->
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script type="text/javascript">
+		class CharacterSheet {
+			constructor () {
+				this._characterData = null;
+				this._isEditMode = false;
+				this._characterSheet = null;
+			}
+
+			init () {
+				this._characterSheet = document.getElementById('character-sheet');
+				this._bindEvents();
+				this._renderEmptyState();
+			}
+
+			_bindEvents () {
+				console.log('Binding events...'); // Debug log
+				
+				// File input events
+				const fileInput = document.getElementById('file-input');
+				const loadBtn = document.getElementById('load-btn');
+				
+				console.log('File input element:', fileInput); // Debug log
+				console.log('Load button element:', loadBtn); // Debug log
+				
+				// Try multiple event binding approaches
+				fileInput.addEventListener('change', (e) => {
+					console.log('File change event triggered:', e); // Debug log
+					this._handleFileLoad(e);
+				});
+				
+				loadBtn.addEventListener('click', () => {
+					console.log('Load button clicked'); // Debug log
+					fileInput.click();
+				});
+				
+				// Also try direct click handler
+				loadBtn.onclick = () => {
+					console.log('Load button clicked (onclick)'); // Debug log
+					fileInput.click();
+				};
+				
+				document.getElementById('save-btn').addEventListener('click', () => this._handleSaveClick());
+				document.getElementById('export-btn').addEventListener('click', () => this._handleExportClick());
+				document.getElementById('clear-btn').addEventListener('click', () => this._handleClearClick());
+				
+				// Edit mode toggle
+				document.getElementById('edit-mode-toggle').addEventListener('change', (e) => this._handleEditModeToggle(e));
+			}
+
+			_handleFileLoad (e) {
+				console.log('File input changed:', e); // Debug log
+				const file = e.target.files[0];
+				if (!file) {
+					console.log('No file selected'); // Debug log
+					return;
+				}
+
+				console.log('File selected:', file.name, file.type, file.size); // Debug log
+
+				const reader = new FileReader();
+				reader.onload = (event) => {
+					console.log('FileReader onload triggered'); // Debug log
+					console.log('FileReader result:', event.target.result); // Debug log
+					try {
+						const data = JSON.parse(event.target.result);
+						console.log('Loaded data:', data); // Debug log
+						this._loadCharacterData(data);
+					} catch (error) {
+						console.error('JSON parse error:', error); // Debug log
+						alert("Invalid JSON file. Please select a valid statgen character file.");
+					}
+				};
+				reader.onerror = (error) => {
+					console.error('FileReader error:', error); // Debug log
+				};
+				reader.readAsText(file);
+			}
+
+			_handleLoadClick () {
+				document.getElementById('file-input').click();
+			}
+
+			_handleSaveClick () {
+				if (!this._characterData) {
+					alert("No character data to save. Please load a character first.");
+					return;
+				}
+
+				if (this._isEditMode) {
+					this._updateCharacterDataFromForm();
+				}
+
+				this._saveToLocalStorage();
+				alert("Character saved successfully!");
+			}
+
+			_handleExportClick () {
+				if (!this._characterData) {
+					alert("No character data to export. Please load a character first.");
+					return;
+				}
+
+				if (this._isEditMode) {
+					this._updateCharacterDataFromForm();
+				}
+
+				const dataStr = JSON.stringify(this._characterData, null, 2);
+				const blob = new Blob([dataStr], {type: "application/json"});
+				const url = URL.createObjectURL(blob);
+				
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = `character-${this._characterData.basic_charName || "unnamed"}.json`;
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				URL.revokeObjectURL(url);
+			}
+
+			_handleClearClick () {
+				if (confirm("Are you sure you want to clear the current character?")) {
+					this._characterData = null;
+					this._renderEmptyState();
+					localStorage.removeItem("characterSheet_data");
+				}
+			}
+
+			_handleEditModeToggle (e) {
+				this._isEditMode = e.target.checked;
+				console.log('Edit mode:', this._isEditMode); // Debug log
+				this._renderCharacterSheet();
+			}
+
+			_loadCharacterData (data) {
+				console.log('Loading character data:', data); // Debug log
+				
+				// Validate that this looks like a statgen file
+				if (!data.fileType || data.fileType !== "statgen") {
+					alert("Invalid file type. Please select a statgen character file.");
+					return;
+				}
+
+				// Extract the state from the data
+				this._characterData = data.state || data;
+				console.log('Extracted character data:', this._characterData); // Debug log
+				this._saveToLocalStorage();
+				this._renderCharacterSheet();
+			}
+
+			_updateCharacterDataFromForm () {
+				if (!this._characterData) return;
+
+				// Update basic info
+				const charNameInput = document.getElementById('char-name');
+				const playerNameInput = document.getElementById('player-name');
+				const alignmentInput = document.getElementById('alignment');
+				
+				if (charNameInput) this._characterData.basic_charName = charNameInput.value;
+				if (playerNameInput) this._characterData.basic_playerName = playerNameInput.value;
+				if (alignmentInput) this._characterData.basic_alignment = alignmentInput.value;
+
+				// Update ability scores
+				const abilities = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+				abilities.forEach(ab => {
+					const input = document.getElementById(`${ab}-score`);
+					if (input) {
+						const score = parseInt(input.value) || 0;
+						this._characterData[`common_export_${ab}`] = score;
+					}
+				});
+			}
+
+			_saveToLocalStorage () {
+				localStorage.setItem("characterSheet_data", JSON.stringify(this._characterData));
+			}
+
+			_loadFromLocalStorage () {
+				const saved = localStorage.getItem("characterSheet_data");
+				if (saved) {
+					try {
+						this._characterData = JSON.parse(saved);
+						return true;
+					} catch (e) {
+						return false;
+					}
+				}
+				return false;
+			}
+
+			_renderEmptyState () {
+				this._characterSheet.innerHTML = `
+					<div class="ve-flex-col ve-text-center ve-muted ve-p-5">
+						<div style="font-size: 3rem; margin-bottom: 1rem;">👤</div>
+						<h3>No Character Loaded</h3>
+						<p>Use the file picker on the left to load a statgen character file.</p>
+					</div>
+				`;
+			}
+
+			_renderCharacterSheet () {
+				if (!this._characterData) {
+					this._renderEmptyState();
+					return;
+				}
+
+				console.log('Rendering character sheet with data:', this._characterData); // Debug log
+
+				const abilities = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+
+				this._characterSheet.innerHTML = `
+					<!-- Character Header -->
+					<div class="ve-flex-col ve-p-4 ve-border-bottom">
+						<h2 class="ve-text-center ve-mb-4">Character Information</h2>
+						<div class="ve-flex ve-flex-wrap ve-gap-3 ve-justify-center">
+							<div class="ve-form-group">
+								<label class="ve-bold ve-mb-1 ve-small">Character Name</label>
+								${this._isEditMode ? 
+									`<input type="text" id="char-name" class="ve-form-control" value="${this._characterData.basic_charName || ''}">` :
+									`<div class="ve-form-control ve-bold">${this._characterData.basic_charName || '—'}</div>`
+								}
+							</div>
+							<div class="ve-form-group">
+								<label class="ve-bold ve-mb-1 ve-small">Player Name</label>
+								${this._isEditMode ? 
+									`<input type="text" id="player-name" class="ve-form-control" value="${this._characterData.basic_playerName || ''}">` :
+									`<div class="ve-form-control ve-bold">${this._characterData.basic_playerName || '—'}</div>`
+								}
+							</div>
+							<div class="ve-form-group">
+								<label class="ve-bold ve-mb-1 ve-small">Alignment</label>
+								${this._isEditMode ? 
+									`<select id="alignment" class="ve-form-control">
+										<option value="">Select alignment...</option>
+										<option value="Lawful Good" ${this._characterData.basic_alignment === 'Lawful Good' ? 'selected' : ''}>Lawful Good</option>
+										<option value="Neutral Good" ${this._characterData.basic_alignment === 'Neutral Good' ? 'selected' : ''}>Neutral Good</option>
+										<option value="Chaotic Good" ${this._characterData.basic_alignment === 'Chaotic Good' ? 'selected' : ''}>Chaotic Good</option>
+										<option value="Lawful Neutral" ${this._characterData.basic_alignment === 'Lawful Neutral' ? 'selected' : ''}>Lawful Neutral</option>
+										<option value="True Neutral" ${this._characterData.basic_alignment === 'True Neutral' ? 'selected' : ''}>True Neutral</option>
+										<option value="Chaotic Neutral" ${this._characterData.basic_alignment === 'Chaotic Neutral' ? 'selected' : ''}>Chaotic Neutral</option>
+										<option value="Lawful Evil" ${this._characterData.basic_alignment === 'Lawful Evil' ? 'selected' : ''}>Lawful Evil</option>
+										<option value="Neutral Evil" ${this._characterData.basic_alignment === 'Neutral Evil' ? 'selected' : ''}>Neutral Evil</option>
+										<option value="Chaotic Evil" ${this._characterData.basic_alignment === 'Chaotic Evil' ? 'selected' : ''}>Chaotic Evil</option>
+									</select>` :
+									`<div class="ve-form-control ve-bold">${this._characterData.basic_alignment || '—'}</div>`
+								}
+							</div>
+						</div>
+					</div>
+
+					<!-- Race & Background -->
+					<div class="ve-flex-col ve-p-4 ve-border-bottom">
+						<h3 class="ve-text-center ve-mb-3">Race & Background</h3>
+						<div class="ve-flex ve-flex-wrap ve-gap-3">
+							<div class="ve-form-group">
+								<label class="ve-bold ve-mb-1 ve-small">Race</label>
+								<div class="ve-form-control ve-bold">${this._getRaceName() || '—'}</div>
+							</div>
+							<div class="ve-form-group">
+								<label class="ve-bold ve-mb-1 ve-small">Background</label>
+								<div class="ve-form-control ve-bold">${this._getBackgroundName() || '—'}</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Ability Scores -->
+					<div class="ve-flex-col ve-p-4">
+						<h3 class="ve-text-center ve-mb-3">Ability Scores</h3>
+						<div class="ve-flex ve-flex-wrap ve-gap-3 ve-justify-center">
+							${abilities.map(ab => `
+								<div class="ve-form-group">
+									<label class="ve-bold ve-mb-1 ve-small">${this._getAbilityName(ab)} (${ab.toUpperCase()})</label>
+									${this._isEditMode ? 
+										`<input type="number" id="${ab}-score" class="ve-form-control" min="1" max="20" value="${this._characterData[`common_export_${ab}`] || 0}">` :
+										`<div class="ve-flex ve-justify-between ve-form-control">
+											<span class="ve-bold">${this._characterData[`common_export_${ab}`] || 0}</span>
+											<span class="ve-muted">(${this._getAbilityModifier(this._characterData[`common_export_${ab}`] || 0)})</span>
+										</div>`
+									}
+								</div>
+							`).join('')}
+						</div>
+					</div>
+
+					<!-- ASI & Feats -->
+					${this._renderAsiFeatsSection()}
+				`;
+			}
+
+			_getRaceName () {
+				if (!this._characterData.common_raceChoiceMetasFrom || this._characterData.common_raceChoiceMetasFrom.length === 0) {
+					return null;
+				}
+				
+				const raceId = this._characterData.common_raceChoiceMetasFrom[0];
+				// This would need to be mapped to actual race data - for now just return the ID
+				return raceId || "Unknown Race";
+			}
+
+			_getBackgroundName () {
+				if (!this._characterData.common_backgroundChoiceMetasFrom || this._characterData.common_backgroundChoiceMetasFrom.length === 0) {
+					return null;
+				}
+				
+				const backgroundId = this._characterData.common_backgroundChoiceMetasFrom[0];
+				// This would need to be mapped to actual background data - for now just return the ID
+				return backgroundId || "Unknown Background";
+			}
+
+			_getAbilityName (ab) {
+				const names = {
+					'str': 'Strength',
+					'dex': 'Dexterity', 
+					'con': 'Constitution',
+					'int': 'Intelligence',
+					'wis': 'Wisdom',
+					'cha': 'Charisma'
+				};
+				return names[ab] || ab.toUpperCase();
+			}
+
+			_getAbilityModifier (score) {
+				return Math.floor((score - 10) / 2);
+			}
+
+			_renderAsiFeatsSection () {
+				if (!this._characterData.common_cntAsi && !this._characterData.common_cntFeatsCustom) {
+					return '';
+				}
+
+				const asiCount = this._characterData.common_cntAsi || 0;
+				const featCount = this._characterData.common_cntFeatsCustom || 0;
+
+				return `
+					<div class="ve-flex-col ve-p-4 ve-border-top">
+						<h3 class="ve-text-center ve-mb-3">Ability Score Improvements & Feats</h3>
+						<div class="ve-flex ve-flex-wrap ve-gap-3">
+							<div class="ve-form-group">
+								<label class="ve-bold ve-mb-1 ve-small">ASI Count</label>
+								<div class="ve-form-control ve-bold">${asiCount}</div>
+							</div>
+							<div class="ve-form-group">
+								<label class="ve-bold ve-mb-1 ve-small">Custom Feats</label>
+								<div class="ve-form-control ve-bold">${featCount}</div>
+							</div>
+						</div>
+					</div>
+				`;
+			}
+		}
+
+		// Initialize the character sheet immediately
+		console.log('Script starting...'); // Debug log
+		
+		// Initialize character sheet when page loads
+		document.addEventListener('DOMContentLoaded', function() {
+			console.log('DOM loaded, initializing character sheet'); // Debug log
+			
+			// Check if CharacterSheet class is defined
+			if (typeof CharacterSheet === 'undefined') {
+				console.error('CharacterSheet class not defined!'); // Debug log
+				return;
+			}
+			
+			const characterSheet = new CharacterSheet();
+			console.log('CharacterSheet instance created:', characterSheet); // Debug log
+			
+			characterSheet.init();
+			console.log('CharacterSheet initialized'); // Debug log
+			
+			// Try to load from localStorage
+			if (characterSheet._loadFromLocalStorage()) {
+				characterSheet._renderCharacterSheet();
+			}
+		});
+	</script>
+</body>
+</html>
