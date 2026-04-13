@@ -130,13 +130,29 @@ export class StatGenUiRenderLevelOneEntityBase {
 		// endregion
 
 		const dispPreview = ee`<div class="ve-flex-col ve-mb-2"></div>`;
-		const hkPreviewEntity = () => {
+		const hkPreviewEntity = async () => {
 			if (!this._parent._state[this._propIsPreview]) return dispPreview.hideVe();
 
 			const entity = this._parent._state[this._propIxEntity] != null ? this._parent[this._propData][this._parent._state[this._propIxEntity]] : null;
 			if (!entity) return dispPreview.hideVe();
 
-			dispPreview.empty().showVe().appends(Renderer.hover.getHoverContent_stats(this._page, entity));
+			// Process class data through data loader to resolve feature strings for homebrew content
+			let processedEntity = entity;
+			if (this._page === UrlUtil.PG_CLASSES && entity.classFeatures) {
+				try {
+					// Use DataLoader to get processed class data which resolves feature strings
+					const hash = UrlUtil.URL_TO_HASH_BUILDER[UrlUtil.PG_CLASSES](entity);
+					processedEntity = await DataLoader.pCacheAndGet(UrlUtil.PG_CLASSES, entity.source, hash, {isSilent: true});
+					if (!processedEntity) {
+						processedEntity = entity; // Fallback to raw data if processing fails
+					}
+				} catch (e) {
+					console.warn("Failed to process class data for preview, using raw data:", e);
+					processedEntity = entity;
+				}
+			}
+
+			dispPreview.empty().showVe().appends(Renderer.hover.getHoverContent_stats(this._page, processedEntity));
 		};
 		this._parent._addHookBase(this._propIxEntity, hkPreviewEntity);
 		this._parent._addHookBase(this._propIsPreview, hkPreviewEntity);

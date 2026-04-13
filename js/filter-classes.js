@@ -92,14 +92,14 @@ class PageFilterClassesBase extends PageFilterBase {
 		this._sourceFilter.addItem(cls._fSources);
 		this._miscFilter.addItem(cls._fMisc);
 
-		cls.classFeatures.forEach(lvlFeatures => lvlFeatures.forEach(feature => this._addEntrySourcesToFilter(feature)));
+		if (cls.classFeatures) cls.classFeatures.forEach(feature => this._addEntrySourcesToFilter(feature));
 
 		cls.subclasses.forEach(sc => {
 			const isScExcluded = (subclassExclusions[sc.source] || {})[sc.name] || false;
 			if (!isScExcluded) {
 				this._sourceFilter.addItem(sc._fSources);
 				this._miscFilter.addItem(sc._fMisc);
-				sc.subclassFeatures.forEach(lvlFeatures => lvlFeatures.forEach(feature => this._addEntrySourcesToFilter(feature)));
+				if (sc.subclassFeatures) sc.subclassFeatures.forEach(feature => this._addEntrySourcesToFilter(feature));
 			}
 		});
 		// endregion
@@ -234,3 +234,81 @@ class PageFilterClasses extends PageFilterClassesBase {
 }
 
 globalThis.PageFilterClasses = PageFilterClasses;
+
+class ModalFilterClasses extends ModalFilterBase {
+	/**
+	 * @param opts
+	 * @param opts.namespace
+	 * @param [opts.isRadio]
+	 * @param [opts.allData]
+	 */
+	constructor (opts) {
+		opts = opts || {};
+		super({
+			...opts,
+			modalTitle: `Class${opts.isRadio ? "" : "es"}`,
+			pageFilter: new PageFilterClasses(),
+		});
+	}
+
+	_getColumnHeaders () {
+		const btnMeta = [
+			{sort: "name", text: "Name", width: "4"},
+			{sort: "source", text: "Source", width: "1"},
+		];
+		return ModalFilterBase._getFilterColumnHeaders(btnMeta);
+	}
+
+	async _pLoadAllData () {
+		return [
+			...(await DataLoader.pCacheAndGetAllSite(UrlUtil.PG_CLASSES)),
+			...((await DataUtil.class.loadPrerelease()).class || []),
+			...((await DataUtil.class.loadBrew()).class || []),
+		];
+	}
+
+	_getListItem (pageFilter, cls, cI) {
+		const eleRow = document.createElement("div");
+		eleRow.className = "ve-px-0 ve-w-100 ve-flex-col ve-no-shrink";
+
+		const hash = UrlUtil.URL_TO_HASH_BUILDER[UrlUtil.PG_CLASSES](cls);
+		const source = Parser.sourceJsonToAbv(cls.source);
+
+		eleRow.innerHTML = `<div class="ve-w-100 ve-flex-vh-center ve-lst__row-border veapp__list-row ve-no-select ve-lst__wrp-cells">
+			<div class="ve-col-0-5 ve-pl-0 ve-flex-vh-center">${this._isRadio ? `<input type="radio" name="radio" class="ve-no-events">` : `<input type="checkbox" class="ve-no-events">`}</div>
+
+			<div class="ve-col-0-5 ve-px-1 ve-flex-vh-center">
+				<div class="ve-ui-list__btn-inline ve-px-2 ve-no-select" title="Toggle Preview (SHIFT to Toggle Info Preview)">[+]</div>
+			</div>
+
+			<div class="ve-col-4 ve-px-1 ${cls._versionBase_isVersion ? "ve-italic" : ""} ${this._getNameStyle()}">${cls._versionBase_isVersion ? `<span class="ve-px-3"></span>` : ""}${cls.name}</div>
+			<div class="ve-col-1 pl-1 ve-pr-0 ve-flex-h-center ${Parser.sourceJsonToSourceClassname(cls.source)}" title="${Parser.sourceJsonToFull(cls.source)}">${source}${Parser.sourceJsonToMarkerHtml(cls.source, {isList: true})}</div>
+		</div>`;
+
+		const btnShowHidePreview = eleRow.firstElementChild.children[1].firstElementChild;
+
+		const listItem = new ListItem(
+			cI,
+			eleRow,
+			cls.name,
+			{
+				hash,
+				source,
+				sourceJson: cls.source,
+				...ListItem.getCommonValues(cls),
+				cleanName: PageFilterClasses.getListAliases(cls),
+				alias: PageFilterClasses.getListAliases(cls),
+			},
+			{
+				cbSel: eleRow.firstElementChild.firstElementChild.firstElementChild,
+				btnShowHidePreview,
+			},
+		);
+
+		ListUiUtil.bindPreviewButton(UrlUtil.PG_CLASSES, this._allData, listItem, btnShowHidePreview);
+
+		return listItem;
+	}
+}
+
+globalThis.ModalFilterClasses = ModalFilterClasses;

@@ -14,191 +14,30 @@ export class StatGenUiRenderLevelOneClass extends StatGenUiRenderLevelOneEntityB
 	_propChoiceWeighted = "common_classChoiceMetasWeighted";
 
 	render () {
-		// Initialize preview state if it doesn't exist
-		if (this._parent._state[this._propIsPreview] === undefined) {
-			this._parent._state[this._propIsPreview] = false;
-			console.log("Initialized preview state to false");
-		}
-		
-		// Classes have no modal filter, so we need to handle this case specially
-		const wrpOuter = document.createElement("div");
-		wrpOuter.className = "ve-flex-col";
+		// Use the standard modal filter system like races
+		const out = super.render();
 
-		// Create the searchable selector without filter functionality
-		const {wrp: selEntity, setFnFilter: setFnFilterEntity} = ComponentUiUtil.getSelSearchable(
-			this._parent,
-			this._propIxEntity,
-			{
-				values: this._parent[this._propData].map((_, i) => i),
-				isAllowNull: true,
-				fnDisplay: ix => {
-					const r = this._parent[this._propData][ix];
-					if (!r) return "(Unknown)";
-					return `${r.name} ${r.source !== Parser.SRC_PHB ? `[${Parser.sourceJsonToAbv(r.source)}]` : ""}`;
-				},
-				asMeta: true,
-			},
-		);
-
-		// Create a functional filter button
-		const btnFilterForEntity = document.createElement("button");
-		btnFilterForEntity.className = "ve-btn ve-btn-xs ve-btn-default ve-br-0 ve-pr-2";
-		btnFilterForEntity.innerHTML = `<span class="glyphicon glyphicon-filter"></span> Filter`;
-		btnFilterForEntity.title = "Filter for Class";
-		
-		// Add proper modal filter functionality
-		btnFilterForEntity.addEventListener("click", () => {
-			this._showClassFilterModal(setFnFilterEntity);
-		});
-
-		// Add preview button with manual toggle
-		const btnPreview = document.createElement("button");
-		btnPreview.className = "ve-btn ve-btn-xs ve-btn-default";
-		btnPreview.title = "Toggle Class Preview";
-		btnPreview.innerHTML = `<span class="glyphicon glyphicon-eye-open"></span>`;
-		
-		// Manual toggle implementation
-		btnPreview.addEventListener("click", () => {
-			console.log("Parent state object:", this._parent._state);
-			console.log("Prop name:", this._propIsPreview);
-			
-			const currentState = this._parent._state[this._propIsPreview];
-			console.log("Current state before toggle:", currentState);
-			
-			// Initialize state if it doesn't exist
-			if (this._parent._state[this._propIsPreview] === undefined) {
-				this._parent._state[this._propIsPreview] = false;
-			}
-			
-			this._parent._state[this._propIsPreview] = !currentState;
-			console.log("State after toggle:", this._parent._state[this._propIsPreview]);
-			
-			// Update button appearance
-			btnPreview.classList.toggle("ve-active", this._parent._state[this._propIsPreview]);
-			
-			// Trigger the preview hook
-			hkPreviewEntity();
-		});
-		
-		const hkBtnPreviewEntity = () => {
-			btnPreview.style.display = this._parent._state[this._propIxEntity] != null && ~this._parent._state[this._propIxEntity] ? "" : "none";
-			btnPreview.classList.toggle("ve-active", this._parent._state[this._propIsPreview]);
-		};
-		this._parent._addHookBase(this._propIxEntity, hkBtnPreviewEntity);
-		hkBtnPreviewEntity();
-
-		// Create preview display (start hidden)
-		const dispPreview = document.createElement("div");
-		dispPreview.className = "ve-flex-col ve-mb-2 ve-hidden";
-		dispPreview.style.display = "none";
-		dispPreview.style.visibility = "hidden";
-		console.log("Created preview element:", dispPreview);
-		
-		const hkPreviewEntity = () => {
-			console.log("=== PREVIEW HOOK CALLED ===");
-			console.log("Preview state:", this._parent._state[this._propIsPreview]);
-			console.log("Class index:", this._parent._state[this._propIxEntity]);
-			console.log("Prop name:", this._propIsPreview);
-			
-			// Always hide preview if toggle is off
-			if (!this._parent._state[this._propIsPreview]) {
-				console.log("Hiding preview - toggle is off");
-				console.log("Before hide - classes:", dispPreview.className);
-				console.log("Before hide - display:", dispPreview.style.display);
-				dispPreview.classList.add("ve-hidden");
-				dispPreview.style.display = "none";
-				dispPreview.style.visibility = "hidden";
-				console.log("After hide - classes:", dispPreview.className);
-				console.log("After hide - display:", dispPreview.style.display);
-				return;
-			}
-
-			// Check if we have a selected entity
-			const entity = this._parent._state[this._propIxEntity] != null ? this._parent[this._propData][this._parent._state[this._propIxEntity]] : null;
-			if (!entity) {
-				console.log("Hiding preview - no entity selected");
-				dispPreview.classList.add("ve-hidden");
-				dispPreview.style.display = "none";
-				return;
-			}
-
-			console.log("Showing preview - entity found:", entity.name);
-			// Show preview and load content
-			dispPreview.classList.remove("ve-hidden");
-			dispPreview.style.display = "";
-			dispPreview.style.visibility = "visible";
-			// Clear previous content and append the new DOM element
-			while (dispPreview.firstChild) {
-				dispPreview.removeChild(dispPreview.firstChild);
-			}
-			const content = Renderer.hover.getHoverContent_stats(this._page, entity);
-			if (content) {
-				dispPreview.appendChild(content);
-			}
-		};
-		this._parent._addHookBase(this._propIxEntity, hkPreviewEntity);
-		this._parent._addHookBase(this._propIsPreview, hkPreviewEntity);
-		hkPreviewEntity();
-
-		// Create the selection UI using standard DOM methods
-		const stgSel = document.createElement("div");
-		stgSel.className = "ve-flex-col ve-mt-3";
-		
-		// Create title
-		const titleDiv = document.createElement("div");
-		titleDiv.className = "ve-mb-1 ve-bold ve-text-large redundant-entity-selection-text";
-		titleDiv.textContent = "Select a Class";
-		stgSel.appendChild(titleDiv);
-		
-		// Create button group container
-		const buttonContainer = document.createElement("div");
-		buttonContainer.className = "ve-flex-v-center ve-mb-2";
-		
-		// Create button group with filter button and selector
-		const btnGroup = document.createElement("div");
-		btnGroup.className = "ve-flex-v-center ve-btn-group ve-w-100 ve-mr-2";
-		btnGroup.appendChild(btnFilterForEntity);
-		btnGroup.appendChild(selEntity);
-		
-		buttonContainer.appendChild(btnGroup);
-		
-		// Add preview button
-		const previewContainer = document.createElement("div");
-		previewContainer.appendChild(btnPreview);
-		buttonContainer.appendChild(previewContainer);
-		
-		stgSel.appendChild(buttonContainer);
-		stgSel.appendChild(dispPreview);
-
-		// Add horizontal divider
-		const divider = document.createElement("hr");
-		divider.className = "ve-hr-3 ve-mt-4 ve-mb-4";
-		wrpOuter.appendChild(divider);
-
-		const out = {
-			wrpOuter,
-			stgSel,
-			dispPreview,
-			hrPreview: null,
-			divider,
-		};
+		// Add proficiencies display
+		const {stgProficiencies, dispProficiencies} = this._getPtsProficiencies();
+		out.stgSel.appendChild(stgProficiencies);
+		out.dispProficiencies = dispProficiencies;
 
 		// Add subclass selection
 		const {stgSubclass, dispSubclass} = this._getPtsSubclass();
 		out.stgSel.appendChild(stgSubclass);
 		out.dispSubclass = dispSubclass;
 
-		// Add starting skills
-		const {stgSkills, dispSkills} = this._getPtsSkills();
-		out.stgSel.appendChild(stgSkills);
-		out.dispSkills = dispSkills;
+		// Add level 1 spells and cantrips selection
+		const {stgSpells, dispSpells} = this._getPtsSpells();
+		out.stgSel.appendChild(stgSpells);
+		out.dispSpells = dispSpells;
 
 		// Add starting equipment
 		const {stgEquipment, dispEquipment} = this._getPtsEquipment();
 		out.stgSel.appendChild(stgEquipment);
 		out.dispEquipment = dispEquipment;
 
-		wrpOuter.appendChild(stgSel);
+		out.wrpOuter.appendChild(out.stgSel);
 
 		return out;
 	}
@@ -211,352 +50,7 @@ export class StatGenUiRenderLevelOneClass extends StatGenUiRenderLevelOneEntityB
 		return this._parent._pb_getClassAbility();
 	}
 
-	_showClassFilterModal (setFnFilterEntity) {
-		// Create filter content
-		const filterContent = this._createFilterContent(setFnFilterEntity);
-		
-		// Use proper UiUtil modal system
-		const modalMeta = UiUtil.getShowModal({
-			title: "Class Filters",
-			isHeight100: true,
-			isUncappedHeight: true,
-			isWidth100: true,
-			isUncappedWidth: true,
-			hasFooter: true,
-			cbClose: () => {
-				// Cleanup if needed
-			}
-		});
-
-		// Add filter content to modal
-		modalMeta.eleModalInner.appendChild(filterContent.content);
-		
-		// Add footer buttons
-		const footer = modalMeta.eleModalFooter || document.createElement("div");
-		footer.className = "ve-no-shrink ve-w-100 ve-flex-col ve-ui-modal__footer ve-mt-auto";
-		footer.innerHTML = `
-			<div class="ve-flex-v-center">
-				<button class="ve-btn ve-btn-primary ve-fltr__btn-close ve-mr-2">Save</button>
-				<button class="ve-btn ve-btn-default ve-fltr__btn-close">Cancel</button>
-			</div>
-		`;
-		
-		// Add event listeners to footer buttons
-		const saveBtn = footer.querySelector('button.ve-btn-primary');
-		if (saveBtn) {
-			saveBtn.addEventListener("click", () => {
-				modalMeta.doClose(true);
-			});
-		}
-		
-		const cancelBtn = footer.querySelector('button.ve-btn-default');
-		if (cancelBtn) {
-			cancelBtn.addEventListener("click", () => {
-				modalMeta.doClose(false);
-			});
-		}
-		
-		// Focus search input
-		setTimeout(() => {
-			const searchInput = filterContent.searchInput;
-			if (searchInput && searchInput.focus) searchInput.focus();
-		}, 100);
-	}
-
-	_createFilterContent (setFnFilterEntity) {
-		// Create main content container
-		const content = document.createElement("div");
-		content.className = "ve-flex-col ve-w-100 ve-h-100";
-		
-		// Create search section
-		const searchSection = document.createElement("div");
-		searchSection.className = "ve-split ve-mb-2 ve-mt-2 ve-flex-v-center ve-mobile-sm__flex-col";
-		searchSection.innerHTML = `
-			<div class="ve-flex-v-baseline ve-mobile-sm__flex-col">
-				<h4 class="ve-m-0 ve-mr-2 ve-mobile-sm__mb-2">Filters</h4>
-				<div class="ve-relative ve-w-100 ve-mobile-sm__mb-2">
-					<input class="ve-form-control ve-input-xs ve-ui-ideco__ipt ve-ui-ideco__ipt--right" 
-						   placeholder="Search..." 
-						   autocomplete="new-password" 
-						   autocapitalize="off" 
-						   spellcheck="false">
-					<div class="ve-ui-ideco__wrp ve-ui-ideco__wrp--right ve-flex-vh-center ve-clickable" title="Clear">
-						<span class="glyphicon glyphicon-remove"></span>
-					</div>
-				</div>
-			</div>
-		`;
-		
-		// Create filter content scroller
-		const filterScroller = document.createElement("div");
-		filterScroller.className = "ve-ui-modal__scroller ve-smooth-scroll ve-px-1";
-		
-		// Create source pills section
-		const sourceSection = this._createSourcePills();
-		
-		// Create miscellaneous section
-		const miscSection = this._createMiscellaneousFilters();
-		
-		// Create feature level section
-		const featureLevelSection = this._createFeatureLevelFilters();
-		
-		// Create other options section
-		const otherOptionsSection = this._createOtherOptions();
-		
-		// Assemble filter content
-		filterScroller.appendChild(sourceSection);
-		filterScroller.appendChild(miscSection);
-		filterScroller.appendChild(featureLevelSection);
-		filterScroller.appendChild(otherOptionsSection);
-		
-		// Assemble content
-		content.appendChild(searchSection);
-		content.appendChild(filterScroller);
-		
-		// Add search functionality
-		const searchInput = searchSection.querySelector("input");
-		const clearBtn = searchSection.querySelector(".ve-ui-ideco__wrp");
-		
-		// The search functionality will be handled by the main searchable selector
-		// This modal is only for filter options, not class selection
-		clearBtn.addEventListener("click", () => {
-			searchInput.value = "";
-		});
-		
-		return {
-			content,
-			searchInput
-		};
-	}
-
-	_createSourcePills () {
-		const sourceSection = document.createElement("div");
-		sourceSection.className = "ve-flex-col";
-		
-		// Create source header
-		const sourceHeader = document.createElement("div");
-		sourceHeader.className = "ve-split ve-fltr__h ve-mb-1";
-		sourceHeader.innerHTML = `
-			<div class="ve-fltr__h-text ve-flex-h-center ve-mobile-sm__w-100">
-				<span>Source</span>
-				<button class="ve-btn ve-btn-xs ve-btn-default ve-mobile-sm__visible ve-ml-auto ve-px-3 ve-mr-2">
-					<span class="glyphicon glyphicon-option-vertical"></span>
-				</button>
-			</div>
-			<div class="ve-flex-v-center ve-fltr__h-wrp-btns-outer ve-mobile-sm__hidden">
-				<div class="ve-flex-vh-center ve-hidden"></div>
-				<div class="ve-flex-v-center ve-fltr__h-wrp-state-btns-outer">
-					<div class="ve-btn-group ve-flex-v-center ve-w-100">
-						<button class="ve-btn ve-btn-default ve-btn-xs ve-fltr__h-btn--all ve-w-100">All</button>
-						<button class="ve-btn ve-btn-default ve-btn-xs ve-fltr__h-btn--clear ve-w-100">Clear</button>
-						<button class="ve-btn ve-btn-default ve-btn-xs ve-fltr__h-btn--none ve-w-100">None</button>
-						<button class="ve-btn ve-btn-default ve-btn-xs ve-w-100">Default</button>
-					</div>
-				</div>
-				<span class="ve-btn-group ve-ml-2 ve-flex-v-center">
-					<button class="ve-btn ve-btn-default ve-btn-xs ve-fltr__h-btn-logic--blue ve-fltr__h-btn-logic ve-w-100" title="Blue match mode for this filter.">OR</button>
-					<button class="ve-btn ve-btn-default ve-btn-xs ve-fltr__h-btn-logic--red ve-fltr__h-btn-logic ve-w-100" title="Red match mode for this filter.">OR</button>
-				</span>
-				<div class="ve-btn-group ve-flex-v-center ve-ml-2">
-					<button class="ve-btn ve-btn-default ve-btn-xs">Hide</button>
-					<button class="ve-btn ve-btn-default ve-btn-xs">
-						<span title="Other Options" class="glyphicon glyphicon-option-vertical"></span>
-					</button>
-				</div>
-			</div>
-		`;
-		
-		// Create source pills container
-		const sourcePillsContainer = document.createElement("div");
-		sourcePillsContainer.className = "ve-fltr__wrp-pills ve-fltr__wrp-subs";
-		
-		// Create source pills
-		const sources = [...new Set(this._parent[this._propData].map(c => c.source))];
-		sources.forEach(source => {
-			const pill = document.createElement("div");
-			pill.className = "ve-fltr__pill";
-			pill.setAttribute("data-state", "yes");
-			pill.innerHTML = `
-				<span class="ve-hidden">
-					<span class="glyphicon glyphicon-book"></span> ${Parser.sourceJsonToAbv(source)}
-				</span>
-				<span class="ve-px-2 ve-fltr-src__spc-pill ve-hidden">|</span>
-				<span>${Parser.sourceJsonToFull(source)}</span>
-			`;
-			pill.addEventListener("click", () => {
-				const currentState = pill.getAttribute("data-state");
-				pill.setAttribute("data-state", currentState === "yes" ? "no" : "yes");
-			});
-			sourcePillsContainer.appendChild(pill);
-		});
-		
-		sourceSection.appendChild(sourceHeader);
-		sourceSection.appendChild(sourcePillsContainer);
-		
-		return sourceSection;
-	}
-
-	_createMiscellaneousFilters () {
-		const miscSection = document.createElement("div");
-		miscSection.className = "ve-flex-col";
-		
-		// Create misc header
-		const miscHeader = document.createElement("div");
-		miscHeader.className = "ve-split ve-fltr__h ve-mb-1";
-		miscHeader.innerHTML = `
-			<div class="ve-fltr__h-text ve-flex-h-center ve-mobile-sm__w-100">
-				<span>Miscellaneous</span>
-				<button class="ve-btn ve-btn-xs ve-btn-default ve-mobile-sm__visible ve-ml-auto ve-px-3 ve-mr-2">
-					<span class="glyphicon glyphicon-option-vertical"></span>
-				</button>
-			</div>
-			<div class="ve-flex-v-center ve-fltr__h-wrp-btns-outer ve-mobile-sm__hidden">
-				<div class="ve-flex-vh-center ve-hidden"></div>
-				<div class="ve-flex-v-center ve-fltr__h-wrp-state-btns-outer">
-					<div class="ve-btn-group ve-flex-v-center ve-w-100">
-						<button class="ve-btn ve-btn-default ve-btn-xs ve-fltr__h-btn--all ve-w-100">All</button>
-						<button class="ve-btn ve-btn-default ve-btn-xs ve-fltr__h-btn--clear ve-w-100">Clear</button>
-						<button class="ve-btn ve-btn-default ve-btn-xs ve-fltr__h-btn--none ve-w-100">None</button>
-					</div>
-				</div>
-				<span class="ve-btn-group ve-ml-2 ve-flex-v-center">
-					<button class="ve-btn ve-btn-default ve-btn-xs ve-fltr__h-btn-logic--blue ve-fltr__h-btn-logic ve-w-100" title="Blue match mode for this filter.">OR</button>
-					<button class="ve-btn ve-btn-default ve-btn-xs ve-fltr__h-btn-logic--red ve-fltr__h-btn-logic ve-w-100" title="Red match mode for this filter.">OR</button>
-				</span>
-				<div class="ve-btn-group ve-flex-v-center ve-ml-2">
-					<button class="ve-btn ve-btn-default ve-btn-xs">Hide</button>
-					<button class="ve-btn ve-btn-default ve-btn-xs">
-						<span title="Other Options" class="glyphicon glyphicon-option-vertical"></span>
-					</button>
-				</div>
-			</div>
-		`;
-		
-		// Create misc pills container
-		const miscPillsContainer = document.createElement("div");
-		miscPillsContainer.className = "ve-fltr__wrp-pills ve-fltr__wrp-pills--flex";
-		
-		// Create misc pills
-		const miscOptions = ["Reprinted", "Sidekick", "Legacy"];
-		miscOptions.forEach(option => {
-			const pill = document.createElement("div");
-			pill.className = "ve-fltr__pill";
-			pill.setAttribute("data-state", "no");
-			pill.textContent = option;
-			pill.addEventListener("click", () => {
-				const currentState = pill.getAttribute("data-state");
-				pill.setAttribute("data-state", currentState === "yes" ? "no" : "yes");
-			});
-			miscPillsContainer.appendChild(pill);
-		});
-		
-		miscSection.appendChild(document.createElement("div")).className = "ve-fltr__dropdown-divider ve-mb-1";
-		miscSection.appendChild(miscHeader);
-		miscSection.appendChild(miscPillsContainer);
-		
-		return miscSection;
-	}
-
-	_createFeatureLevelFilters () {
-		const featureLevelSection = document.createElement("div");
-		featureLevelSection.className = "ve-flex-col";
-		
-		// Create feature level header
-		const featureHeader = document.createElement("div");
-		featureHeader.className = "ve-split ve-fltr__h ve-mb-1";
-		featureHeader.innerHTML = `
-			<div class="ve-fltr__h-text ve-flex-h-center">
-				<span>Feature Level</span>
-				<button class="ve-btn ve-btn-xs ve-btn-default ve-mobile-sm__visible ve-ml-auto ve-px-3 ve-mr-2">
-					<span class="glyphicon glyphicon-option-vertical"></span>
-				</button>
-			</div>
-			<div class="ve-flex-v-center ve-mobile-sm__hidden">
-				<div>
-					<button class="ve-btn ve-btn-default ve-btn-xs ve-mr-2">Show as Dropdowns</button>
-					<button class="ve-btn ve-btn-default ve-btn-xs">Reset</button>
-				</div>
-				<div class="ve-flex-v-center ve-fltr__summary_item ve-fltr__summary_item--include ve-hidden"></div>
-				<div class="ve-btn-group ve-flex-v-center ve-ml-2">
-					<button class="ve-btn ve-btn-default ve-btn-xs">Hide</button>
-					<button class="ve-btn ve-btn-default ve-btn-xs">
-						<span title="Other Options" class="glyphicon glyphicon-option-vertical"></span>
-					</button>
-				</div>
-			</div>
-		`;
-		
-		// Create level slider
-		const levelSlider = document.createElement("div");
-		levelSlider.className = "ve-fltr__wrp-pills ve-fltr__wrp-pills--flex";
-		levelSlider.innerHTML = `
-			<div class="ve-flex-col ve-w-100 ve-ui-slidr__wrp ve-touch-action-none">
-				<div class="ve-flex-v-center ve-w-100 ve-ui-slidr__wrp-top">
-					<div class="ve-overflow-hidden ve-ui-slidr__disp-value ve-no-shrink ve-no-grow ve-no-wrap ve-flex-vh-center ve-bold ve-no-select ve-ui-slidr__disp-value--visible ve-ui-slidr__disp-value--left" title="1">1</div>
-					<div class="ve-flex-v-center ve-w-100 ve-h-100 ve-ui-slidr__wrp-track ve-clickable">
-						<div class="ve-relative ve-w-100 ve-ui-slidr__track-outer">
-							<div class="ve-ui-slidr__track-inner ve-h-100 ve-absolute" style="left: 0%; right: 0%;"></div>
-							<div class="ve-ui-slidr__thumb ve-absolute ve-clickable ve-touch-action-none" draggable="true" style="left: calc(0% - 8px);"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-		`;
-		
-		featureLevelSection.appendChild(document.createElement("div")).className = "ve-fltr__dropdown-divider ve-mb-1";
-		featureLevelSection.appendChild(featureHeader);
-		featureLevelSection.appendChild(levelSlider);
-		
-		return featureLevelSection;
-	}
-
-	_createOtherOptions () {
-		const otherOptionsSection = document.createElement("div");
-		otherOptionsSection.className = "ve-flex-col";
-		
-		// Create other options header
-		const otherHeader = document.createElement("div");
-		otherHeader.className = "ve-split ve-fltr__h ve-mb-1";
-		otherHeader.innerHTML = `
-			<div class="ve-fltr__h-text ve-flex-h-center">
-				<span>Other/Text Options</span>
-			</div>
-			<div class="ve-flex-v-center">
-				<div class="ve-flex-v-center">
-					<button class="ve-btn ve-btn-default ve-btn-xs">Reset</button>
-				</div>
-				<div class="ve-flex-v-center ve-fltr__summary_item ve-fltr__summary_item--include ve-hidden"></div>
-				<div class="ve-btn-group ve-flex-v-center ve-ml-2">
-					<button class="ve-btn ve-btn-default ve-btn-xs">Hide</button>
-					<button class="ve-btn ve-btn-default ve-btn-xs">
-						<span title="Other Options" class="glyphicon glyphicon-option-vertical"></span>
-					</button>
-				</div>
-			</div>
-		`;
-		
-		// Create other options pills
-		const otherPillsContainer = document.createElement("div");
-		otherPillsContainer.innerHTML = `
-			<div class="ve-fltr__pill" data-state="no">Display Class if Any Subclass is Visible</div>
-			<div class="ve-fltr__pill" data-state="yes">Class Feature Options/Variants</div>
-		`;
-		
-		// Add click handlers to pills
-		otherPillsContainer.querySelectorAll(".ve-fltr__pill").forEach(pill => {
-			pill.addEventListener("click", () => {
-				const currentState = pill.getAttribute("data-state");
-				pill.setAttribute("data-state", currentState === "yes" ? "no" : "yes");
-			});
-		});
-		
-		otherOptionsSection.appendChild(document.createElement("div")).className = "ve-fltr__dropdown-divider ve-mb-1";
-		otherOptionsSection.appendChild(otherHeader);
-		otherOptionsSection.appendChild(otherPillsContainer);
-		
-		return otherOptionsSection;
-	}
-
+	
 	_getPtsSubclass () {
 		const stgSubclass = document.createElement("div");
 		stgSubclass.className = "ve-flex-col ve-w-100";
@@ -607,6 +101,71 @@ export class StatGenUiRenderLevelOneClass extends StatGenUiRenderLevelOneEntityB
 			if (["Cleric", "Sorcerer", "Warlock"].includes(classData.name)) {
 				const subclassHtml = await this._renderSubclassDropdown(classData.name, newSubclassLabel);
 				if (container) container.innerHTML = subclassHtml;
+				
+				// Add toggle-based preview event handling for dropdown
+				setTimeout(() => {
+					const subclassSelect = container.querySelector("#subclass-select");
+					const toggleButton = container.querySelector("#subclass-preview-toggle");
+					const previewContainer = container.querySelector("#subclass-preview-container");
+					
+					// Handle dropdown change
+					if (subclassSelect) {
+						subclassSelect.addEventListener("change", () => {
+							const selectedOption = subclassSelect.options[subclassSelect.selectedIndex];
+							const shortName = subclassSelect.value;
+							const source = selectedOption.getAttribute("data-source");
+							
+							// Hide all subclass previews first
+							const allPreviews = container.querySelectorAll("[data-subclass-id]");
+							allPreviews.forEach(preview => preview.classList.add("ve-hidden"));
+							
+							// Show the selected subclass preview if toggle is active
+							if (!previewContainer.classList.contains("ve-hidden")) {
+								if (shortName && source) {
+									const stateKey = `subclass_${classData.name}_${shortName}_${source}`;
+									const selectedPreview = container.querySelector(`[data-subclass-id="${stateKey}"]`);
+									if (selectedPreview) {
+										selectedPreview.classList.remove("ve-hidden");
+									} else {
+										// Show test preview if specific subclass preview not found
+										const testPreview = container.querySelector(`[data-subclass-id="test_preview"]`);
+										if (testPreview) {
+											testPreview.classList.remove("ve-hidden");
+										}
+									}
+								} else {
+									// Show test preview when no subclass is selected
+									const testPreview = container.querySelector(`[data-subclass-id="test_preview"]`);
+									if (testPreview) {
+										testPreview.classList.remove("ve-hidden");
+									}
+								}
+							}
+						});
+					}
+					
+					// Handle toggle button click
+					if (toggleButton && previewContainer) {
+						toggleButton.addEventListener("click", () => {
+							const isHidden = previewContainer.classList.contains("ve-hidden");
+							
+							if (isHidden) {
+								// Show preview container
+								previewContainer.classList.remove("ve-hidden");
+								toggleButton.classList.add("ve-active");
+								
+								// Trigger the current selection to show the right preview
+								if (subclassSelect) {
+									subclassSelect.dispatchEvent(new Event("change"));
+								}
+							} else {
+								// Hide preview container
+								previewContainer.classList.add("ve-hidden");
+								toggleButton.classList.remove("ve-active");
+							}
+						});
+					}
+				}, 100);
 			} else {
 				// Use original method for other classes
 				const subclassData = this._parseClassSubclasses(classData);
@@ -663,25 +222,56 @@ export class StatGenUiRenderLevelOneClass extends StatGenUiRenderLevelOneEntityB
 		try {
 			const subclassLookup = await DataUtil.loadJSON(`${Renderer.get().baseUrl}data/generated/gendata-subclass-lookup.json`);
 			const classData = this._parent.class;
-			
-			if (!classData || !subclassLookup[classData.source] || !subclassLookup[classData.source][className]) {
-				return [];
-			}
-
-			const classSubclasses = subclassLookup[classData.source][className];
 			const options = [];
 
-			// Iterate through all sources for this class
-			Object.keys(classSubclasses).forEach(source => {
-				const sourceSubclasses = classSubclasses[source];
-				Object.keys(sourceSubclasses).forEach(subclassKey => {
-					const subclass = sourceSubclasses[subclassKey];
-					options.push({
-						name: subclass.name,
-						shortName: subclassKey,
-						source: source
+			// Load official subclasses from lookup data
+			if (classData && subclassLookup[classData.source] && subclassLookup[classData.source][className]) {
+				const classSubclasses = subclassLookup[classData.source][className];
+				
+				// Iterate through all sources for this class
+				Object.keys(classSubclasses).forEach(source => {
+					const sourceSubclasses = classSubclasses[source];
+					Object.keys(sourceSubclasses).forEach(subclassKey => {
+						const subclass = sourceSubclasses[subclassKey];
+						options.push({
+							name: subclass.name,
+							shortName: subclassKey,
+							source: source
+						});
 					});
 				});
+			}
+
+			// Load homebrew subclasses directly from homebrew data
+			if (classData && classData.subclasses) {
+				classData.subclasses.forEach(subclass => {
+					// Skip if this is already in the lookup data (avoid duplicates)
+					const exists = options.some(opt => opt.name === subclass.name && opt.source === subclass.source);
+					if (!exists) {
+						options.push({
+							name: subclass.name,
+							shortName: subclass.shortName || subclass.name.toLowerCase().replace(/\s+/g, ''),
+							source: subclass.source
+						});
+					}
+				});
+			}
+
+			// Also load homebrew subclasses from the global homebrew data
+			const brewSubclasses = BrewUtil2.getBrewProcessedFromCache("subclass") || [];
+			brewSubclasses.forEach(subclass => {
+				// Check if this subclass belongs to the current class
+				if (subclass.className === className) {
+					// Skip if this is already in the options (avoid duplicates)
+					const exists = options.some(opt => opt.name === subclass.name && opt.source === subclass.source);
+					if (!exists) {
+						options.push({
+							name: subclass.name,
+							shortName: subclass.shortName || subclass.name.toLowerCase().replace(/\s+/g, ''),
+							source: subclass.source
+						});
+					}
+				}
 			});
 
 			return options.sort((a, b) => a.name.localeCompare(b.name));
@@ -698,83 +288,285 @@ export class StatGenUiRenderLevelOneClass extends StatGenUiRenderLevelOneEntityB
 			return `<div class="ve-italic ve-muted">No ${subclassLabel} at level 1.</div>`;
 		}
 
+		// Generate preview content for each subclass
+		const previewContent = await this._generateSubclassPreviews(className, subclassOptions);
+
 		return `<div class="ve-flex-col">
-			<select class="ve-form-control ve-input-xs form-control--minimal ve-mb-2" id="subclass-select">
-				<option value="">Select a ${subclassLabel.toLowerCase()}...</option>
-				${subclassOptions.map(option => `
-					<option value="${option.shortName}" data-source="${option.source}">
-						${option.name}${option.source !== "PHB" ? ` [${Parser.sourceJsonToAbv(option.source)}]` : ""}
-					</option>
-				`).join('')}
-			</select>
+			<div class="ve-flex-v-center ve-mb-2">
+				<select class="ve-form-control ve-input-xs form-control--minimal ve-flex-1" id="subclass-select">
+					<option value="">Select a ${subclassLabel.toLowerCase()}...</option>
+					${subclassOptions.map(option => `
+						<option value="${option.shortName}" data-source="${option.source}">
+							${option.name}${option.source !== "PHB" ? ` [${Parser.sourceJsonToAbv(option.source)}]` : ""}
+						</option>
+					`).join('')}
+				</select>
+				<button class="ve-btn ve-btn-xs ve-btn-default ve-ml-2" id="subclass-preview-toggle" title="Toggle ${subclassLabel} Preview">
+					<span class="glyphicon glyphicon-eye-open"></span>
+				</button>
+			</div>
+			<div class="ve-flex-col ve-mb-2 ve-hidden" id="subclass-preview-container">
+				${previewContent}
+			</div>
 		</div>`;
 	}
 
-	_getPtsSkills () {
-		const stgSkills = document.createElement("div");
-		stgSkills.className = "ve-flex-col ve-w-100";
-		stgSkills.innerHTML = `
-			<div class="ve-mb-1 ve-bold ve-text-large">Starting Skills</div>
-			<div class="ve-flex-col" id="class-skills-container">
-				<div class="ve-italic ve-muted">Select a class to see skill options...</div>
+	_getPtsSpells () {
+		const stgSpells = document.createElement("div");
+		stgSpells.className = "ve-flex-col ve-w-100";
+		stgSpells.innerHTML = `
+			<div class="ve-mb-1 ve-bold ve-text-large">Level 1 Spells & Cantrips</div>
+			<div class="ve-flex-col" id="class-spells-container">
+				<div class="ve-italic ve-muted">Select a class to see spell options...</div>
 			</div>
 		`;
 
-		const dispSkills = document.createElement("div");
-		dispSkills.className = "ve-flex-col";
+		const dispSpells = document.createElement("div");
+		dispSpells.className = "ve-flex-col";
 
-		const hkClass = () => {
+		const hkClass = async () => {
 			const classData = this._parent.class;
 			if (!classData) {
-				stgSkills.style.display = "none";
+				stgSpells.style.display = "none";
 				return;
 			}
 
-			stgSkills.style.display = "";
+			stgSpells.style.display = "";
 			
-			const skillsData = this._parseClassSkills(classData);
-			const skillsHtml = this._renderSkillsSelection(skillsData);
-			const container = stgSkills.querySelector("#class-skills-container");
-			if (container) container.innerHTML = skillsHtml;
+			const spellsData = this._parseClassSpells(classData);
+			const spellsHtml = await this._renderSpellsSelection(spellsData);
+			const container = stgSpells.querySelector("#class-spells-container");
+			if (container) container.innerHTML = spellsHtml;
 		};
 		this._parent._addHookBase("common_ixClass", hkClass);
 		
 		const currentClass = this._parent.class;
 		if (!currentClass) {
-			stgSkills.style.display = "none";
+			stgSpells.style.display = "none";
 		}
 
 		return {
-			stgSkills,
-			dispSkills,
+			stgSpells,
+			dispSpells,
 		};
 	}
 
-	_parseClassSkills (classData) {
-		if (!classData.startingSkills || !classData.startingSkills.length) {
+	_parseClassSpells (classData) {
+		// Always return a valid structure for the modal system to work
+		// The modal system will handle filtering spells by class
+		return {
+			spells: [],
+			cantrips: []
+		};
+	}
+
+	async _renderSpellsSelection (spellsData) {
+		if (!spellsData) {
+			return `<div class="ve-italic ve-muted">No spellcasting available for this class.</div>`;
+		}
+
+		const classData = this._parent.class;
+		const className = classData.name;
+		
+		// Get spell limits based on class
+		const spellLimits = this._getClassSpellLimits(className);
+		
+		let html = '<div class="ve-flex-col">';
+		
+		// Add spell counters
+		html += '<div class="ve-flex ve-mb-2">';
+		html += `<div class="ve-mr-3"><span class="ve-bold">Cantrips:</span> <span id="cantrip-count">0</span>/${spellLimits.cantrips}</div>`;
+		html += `<div><span class="ve-bold">Level 1 Spells:</span> <span id="spell-count">0</span>/${spellLimits.spells}</div>`;
+		html += '</div>';
+
+		// Add spell selection buttons
+		html += '<div class="ve-flex ve-mb-2">';
+		html += `<button class="ve-btn ve-btn-default ve-btn-xs ve-mr-2" id="select-cantrips-btn">Select Cantrips</button>`;
+		html += `<button class="ve-btn ve-btn-default ve-btn-xs" id="select-spells-btn">Select Level 1 Spells</button>`;
+		html += '</div>';
+
+		// Add selected spells display
+		html += '<div class="ve-flex-col">';
+		html += '<div class="ve-bold ve-mb-1">Selected Cantrips:</div>';
+		html += '<div class="ve-flex ve-flex-wrap ve-mb-2" id="selected-cantrips">';
+		html += '<div class="ve-italic ve-muted">No cantrips selected</div>';
+		html += '</div>';
+		
+		html += '<div class="ve-bold ve-mb-1">Selected Level 1 Spells:</div>';
+		html += '<div class="ve-flex ve-flex-wrap" id="selected-spells">';
+		html += '<div class="ve-italic ve-muted">No spells selected</div>';
+		html += '</div>';
+		html += '</div>';
+
+		html += '</div>';
+
+		// Initialize modal functionality after DOM is ready
+		setTimeout(() => {
+			this._initializeSpellModals(spellLimits);
+		}, 100);
+
+		return html;
+	}
+
+	_getClassSpellLimits (className) {
+		// Define spell limits based on class
+		const limits = {
+			"Wizard": { cantrips: 3, spells: 6 },
+			"Cleric": { cantrips: 0, spells: 0 }, // Clerics get all cantrips and prepare spells
+			"Druid": { cantrips: 2, spells: 0 }, // Druids prepare spells
+			"Sorcerer": { cantrips: 4, spells: 2 },
+			"Warlock": { cantrips: 2, spells: 2 },
+			"Bard": { cantrips: 2, spells: 4 },
+			"Paladin": { cantrips: 0, spells: 0 }, // Paladins prepare spells
+			"Ranger": { cantrips: 0, spells: 0 }, // Rangers prepare spells
+			"Artificer": { cantrips: 0, spells: 4 } // Artificers prepare spells
+		};
+		
+		return limits[className] || { cantrips: 0, spells: 0 };
+	}
+
+	async _initializeSpellModals (spellLimits) {
+		const classData = this._parent.class;
+		const className = classData.name;
+
+		// Initialize state for selected spells
+		const cantripProp = `common_selectedCantrips_${className}`;
+		const spellProp = `common_selectedSpells_${className}`;
+		
+		if (!this._parent._state[cantripProp]) {
+			this._parent._state[cantripProp] = [];
+		}
+		if (!this._parent._state[spellProp]) {
+			this._parent._state[spellProp] = [];
+		}
+
+		// Get modal buttons
+		const cantripBtn = document.querySelector("#select-cantrips-btn");
+		const spellBtn = document.querySelector("#select-spells-btn");
+
+		if (cantripBtn) {
+			cantripBtn.addEventListener("click", async () => {
+				// Load all spells first
+				const allSpells = await DataLoader.pCacheAndGetAllSite(UrlUtil.PG_SPELLS);
+				
+				// Mutate spells for filtering
+				allSpells.forEach(spell => PageFilterSpells.mutateForFilters(spell));
+				
+				// Filter to only cantrips available to this class
+				const classCantrips = allSpells.filter(spell => 
+					spell.level === 0 && 
+					spell._fClasses && 
+					spell._fClasses.some(cls => cls.item.toLowerCase() === className.toLowerCase())
+				);
+
+				const modalFilter = new ModalFilterSpells({
+					isRadio: false,
+					namespace: `charactercreator_${className}_cantrips`,
+					allData: classCantrips,
+				});
+				
+				const selectedCantrips = await modalFilter.pGetUserSelection();
+
+				if (selectedCantrips) {
+					this._parent._state[cantripProp] = selectedCantrips.map(item => item.values.hash);
+					await this._updateSelectedSpellsDisplay("cantrips", this._parent._state[cantripProp]);
+					this._updateSpellCounters();
+				}
+			});
+		}
+
+		if (spellBtn) {
+			spellBtn.addEventListener("click", async () => {
+				// Load all spells first
+				const allSpells = await DataLoader.pCacheAndGetAllSite(UrlUtil.PG_SPELLS);
+				
+				// Mutate spells for filtering
+				allSpells.forEach(spell => PageFilterSpells.mutateForFilters(spell));
+				
+				// Filter to only level 1 spells available to this class
+				const classSpells = allSpells.filter(spell => 
+					spell.level === 1 && 
+					spell._fClasses && 
+					spell._fClasses.some(cls => cls.item.toLowerCase() === className.toLowerCase())
+				);
+
+				const modalFilter = new ModalFilterSpells({
+					isRadio: false,
+					namespace: `charactercreator_${className}_spells`,
+					allData: classSpells,
+				});
+				
+				const selectedSpells = await modalFilter.pGetUserSelection();
+
+				if (selectedSpells) {
+					this._parent._state[spellProp] = selectedSpells.map(item => item.values.hash);
+					await this._updateSelectedSpellsDisplay("spells", this._parent._state[spellProp]);
+					this._updateSpellCounters();
+				}
+			});
+		}
+
+		// Initialize displays
+		await this._updateSelectedSpellsDisplay("cantrips", this._parent._state[cantripProp] || []);
+		await this._updateSelectedSpellsDisplay("spells", this._parent._state[spellProp] || []);
+		this._updateSpellCounters();
+	}
+
+	async _updateSelectedSpellsDisplay (type, selectedSpells) {
+		const containerId = type === "cantrips" ? "selected-cantrips" : "selected-spells";
+		const container = document.querySelector(`#${containerId}`);
+		
+		if (!container) return;
+
+		if (!selectedSpells || selectedSpells.length === 0) {
+			container.innerHTML = `<div class="ve-italic ve-muted">No ${type} selected</div>`;
+			return;
+		}
+
+		// Find spell data for all selected spells
+		const spellPromises = selectedSpells.map(async spellHash => {
+			const spell = await this._findSpellByHash(spellHash);
+			if (!spell) return "";
+			
+			return `
+				<div class="ve-flex-v-center ve-py-1 ve-px-2 ve-border ve-rounded ve-mb-1 ve-relative">
+					<div class="ve-bold">${spell.name}</div>
+					<button class="ve-btn ve-btn-xs ve-btn-default ve-ml-2" onclick="this.parentElement.remove()">×</button>
+				</div>
+			`;
+		});
+
+		const html = (await Promise.all(spellPromises)).filter(Boolean).join("");
+		container.innerHTML = html;
+	}
+
+	_updateSpellCounters () {
+		const classData = this._parent.class;
+		const className = classData.name;
+		const spellLimits = this._getClassSpellLimits(className);
+		
+		const cantripProp = `common_selectedCantrips_${className}`;
+		const spellProp = `common_selectedSpells_${className}`;
+		
+		const cantripCount = this._parent._state[cantripProp]?.length || 0;
+		const spellCount = this._parent._state[spellProp]?.length || 0;
+		
+		const cantripCountEl = document.querySelector("#cantrip-count");
+		const spellCountEl = document.querySelector("#spell-count");
+		
+		if (cantripCountEl) cantripCountEl.textContent = cantripCount;
+		if (spellCountEl) spellCountEl.textContent = spellCount;
+	}
+
+	async _findSpellByHash (hash) {
+		try {
+			// Load all spells to find the one matching the hash
+			const allSpells = await DataLoader.pCacheAndGetAllSite(UrlUtil.PG_SPELLS);
+			return allSpells.find(spell => UrlUtil.URL_TO_HASH_BUILDER[UrlUtil.PG_SPELLS](spell) === hash);
+		} catch (e) {
+			console.warn("Failed to find spell by hash:", hash, e);
 			return null;
 		}
-
-		return {
-			skills: classData.startingSkills.map(skill => ({
-				name: skill,
-				selected: false
-			}))
-		};
-	}
-
-	_renderSkillsSelection (skillsData) {
-		if (!skillsData || !skillsData.skills.length) {
-			return `<div class="ve-italic ve-muted">No starting skills available.</div>`;
-		}
-
-		return `<div class="ve-flex-col">
-			${skillsData.skills.map(skill => `
-				<div class="ve-flex-v-center ve-py-1 ve-px-2 ve-clickable ve-border ve-rounded ve-mb-1">
-					<div class="ve-bold">${skill.name}</div>
-				</div>
-			`).join('')}
-		</div>`;
 	}
 
 	_getPtsEquipment () {
@@ -842,5 +634,550 @@ export class StatGenUiRenderLevelOneClass extends StatGenUiRenderLevelOneEntityB
 				</div>
 			`).join('')}
 		</div>`;
+	}
+
+	async _generateSubclassPreviews (className, subclassOptions) {
+		const previewElements = [];
+		console.log(`Generating previews for ${className} with ${subclassOptions.length} options`);
+		
+		// Add a simple test preview first
+		previewElements.push(`
+			<div data-subclass-id="test_preview" class="ve-flex-col ve-mb-2 ve-hidden">
+				<div class="ve-mb-1 ve-bold ve-text-large">Test Preview</div>
+				<div class="ve-flex-col cls__feature-subclass">
+					<p>This is a test preview to verify the toggle mechanism is working.</p>
+					<p>If you can see this, the toggle system works but there's an issue with loading actual subclass data.</p>
+				</div>
+			</div>
+		`);
+		
+		for (const option of subclassOptions) {
+			try {
+				console.log(`Loading subclass data for ${option.name} (${option.shortName}) from ${option.source}`);
+				const subclassData = await this._loadSubclassData(className, option.shortName, option.source);
+				if (subclassData) {
+					console.log(`Successfully loaded ${option.name}, rendering content...`);
+					const stateKey = `subclass_${className}_${option.shortName}_${option.source}`;
+					
+					// Render the subclass content like the classes page
+					const renderedContent = this._renderSubclassContent(subclassData);
+					console.log(`Rendered content for ${option.name}:`, renderedContent.substring(0, 100) + '...');
+					
+					previewElements.push(`
+						<div data-subclass-id="${stateKey}" class="ve-flex-col ve-mb-2 ve-hidden">
+							<div class="ve-mb-1 ve-bold ve-text-large">${option.name}</div>
+							<div class="ve-flex-col cls__feature-subclass">
+								${renderedContent}
+							</div>
+						</div>
+					`);
+				} else {
+					console.warn(`No subclass data returned for ${option.name}`);
+					// Add a fallback preview
+					const stateKey = `subclass_${className}_${option.shortName}_${option.source}`;
+					previewElements.push(`
+						<div data-subclass-id="${stateKey}" class="ve-flex-col ve-mb-2 ve-hidden">
+							<div class="ve-mb-1 ve-bold ve-text-large">${option.name}</div>
+							<div class="ve-flex-col cls__feature-subclass">
+								<div class="ve-italic ve-muted">Preview data not available for ${option.name} from ${option.source}.</div>
+							</div>
+						</div>
+					`);
+				}
+			} catch (e) {
+				console.error(`Failed to generate preview for ${option.name}:`, e);
+			}
+		}
+		
+		console.log(`Generated ${previewElements.length} preview elements`);
+		return previewElements.join('');
+	}
+
+	_renderSubclassContent (subclassData) {
+		if (!subclassData.subclassFeatures || !subclassData.subclassFeatures.length) {
+			return '<div class="ve-italic ve-muted">No subclass features available.</div>';
+		}
+
+		// Render the first level of subclass features
+		const firstLevelFeatures = subclassData.subclassFeatures[0] || [];
+		if (!firstLevelFeatures.length) {
+			return '<div class="ve-italic ve-muted">No level 1 subclass features available.</div>';
+		}
+
+		return firstLevelFeatures.map(feature => {
+			if (typeof feature === 'string') {
+				return `<p>${feature}</p>`;
+			} else if (feature.entries) {
+				return Renderer.get().render({entries: feature.entries});
+			} else {
+				return Renderer.get().render({entries: [feature]});
+			}
+		}).join('');
+	}
+
+	async _loadSubclassData (className, shortName, source) {
+		try {
+			// Use the same approach as classes.html - load subclass data directly
+			const classData = this._parent.class;
+			const fauxSc = {shortName, source, classSource: classData?.source || "PHB", className: className};
+			const hash = UrlUtil.URL_TO_HASH_BUILDER["subclass"](fauxSc);
+			
+			const loaded = await DataLoader.pCacheAndGet("subclass", source, hash, {isSilent: true});
+			if (!loaded) {
+				console.warn(`No subclass data found for ${className}/${shortName} from ${source}`);
+				return null;
+			}
+
+			// Debug: Show the actual subclass structure
+			if (className === "Cleric" && shortName === "Knowledge") {
+				console.log("Loaded subclass data:", loaded);
+				console.log("Looking for:", { shortName, source });
+			}
+
+			console.log(`Found subclass: ${loaded.name} from ${loaded.source}`);
+
+			// Create a complete subclass object for preview
+			return {
+				name: loaded.name,
+				shortName: loaded.shortName,
+				source: loaded.source,
+				subclassFeatures: loaded.subclassFeatures || []
+			};
+		} catch (e) {
+			console.error(`Error loading subclass data for ${className}/${shortName}:`, e);
+			return null;
+		}
+	}
+
+	_getPtsProficiencies () {
+		const stgProficiencies = document.createElement("div");
+		const dispProficiencies = document.createElement("div");
+
+		const hkRenderProficiencies = () => {
+			const classData = this._parent.class;
+			if (!classData) {
+				dispProficiencies.innerHTML = `<div class="ve-italic ve-muted">Select a class to view proficiencies.</div>`;
+				stgProficiencies.style.display = "none";
+				return;
+			}
+
+			stgProficiencies.style.display = "";
+			
+			const proficiencies = classData.startingProficiencies || {};
+			const parts = [];
+
+			// Armor proficiencies
+			if (proficiencies.armor && proficiencies.armor.length) {
+				const armorList = proficiencies.armor.map(armor => {
+					if (typeof armor === "string") {
+						return Renderer.get().render(armor);
+					}
+					return Renderer.get().render(armor);
+				}).join(", ");
+				parts.push(`<div><strong>Armor:</strong> ${armorList}</div>`);
+			}
+
+			// Weapon proficiencies
+			if (proficiencies.weapons && proficiencies.weapons.length) {
+				const weaponList = proficiencies.weapons.map(weapon => {
+					if (typeof weapon === "string") {
+						return Renderer.get().render(weapon);
+					}
+					return Renderer.get().render(weapon);
+				}).join(", ");
+				parts.push(`<div><strong>Weapons:</strong> ${weaponList}</div>`);
+			}
+
+			// Tool proficiencies
+			const allTools = [...(proficiencies.tools || []), ...(proficiencies.toolProficiencies || [])];
+			if (allTools.length > 0) {
+				console.log("Processing all tools:", allTools);
+				const fixedTools = [];
+				const toolChoices = [];
+				
+				allTools.forEach(tool => {
+					console.log("Processing tool:", tool, "Type:", typeof tool);
+					if (typeof tool === "string") {
+						// Check if this string contains a choice pattern
+						if (tool.includes("of your choice") || tool.includes("of your choice")) {
+							console.log("Found string-based tool choice:", tool);
+							
+							// Extract tool type and count
+							let toolType = "";
+							let count = 1;
+							
+							// Extract count - handle both digits and words
+							let countMatch = tool.match(/(\d+)\s+.*?\s+of your choice/i);
+							if (!countMatch) {
+								// Try word-based count
+								countMatch = tool.match(/(one|two|three|four|five|six|seven|eight|nine|ten)\s+.*?\s+of your choice/i);
+							}
+							console.log("Count match for tool:", tool, "Match:", countMatch);
+							if (countMatch) {
+								const countWord = countMatch[1].toLowerCase();
+								const wordToNumber = {
+									'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+									'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+								};
+								count = wordToNumber[countWord] || parseInt(countMatch[1]) || 1;
+								console.log("Parsed count:", count);
+							} else {
+								console.log("No count match found, using default 1");
+							}
+							
+							// Extract tool type from {@item ...} references
+							const itemMatch = tool.match(/\{@item ([^|]+)\|[^}]+\}/i);
+							if (itemMatch) {
+								toolType = itemMatch[1].toLowerCase();
+							}
+							
+							// Get appropriate tool list based on type
+							let toolOptions = [];
+							if (toolType.includes("musical instrument")) {
+								// Bard: exactly 3 instruments
+								toolOptions = [
+									"Bagpipes", "Drum", "Dulcimer", "Flute", "Glaur", "Hand Drum", 
+									"Longhorn", "Lute", "Lyre", "Pan Flute", "Shawm", "Viol", "Yarting"
+								];
+							} else if (toolType.includes("artisan's tools") || toolType.includes("artisan tools")) {
+								// Monk: 1 tool from artisan's tools OR musical instruments
+								// Messenger/Tamer: any 1 tool
+								toolOptions = [
+									"Alchemist's Supplies", "Brewer's Supplies", "Calligrapher's Supplies", 
+									"Cartographer's Tools", "Cobbler's Tools", "Cook's Utensils", 
+									"Glassblower's Tools", "Jeweler's Tools", "Leatherworker's Tools", 
+									"Mason's Tools", "Painter's Supplies", "Potter's Tools", 
+									"Smith's Tools", "Tinker's Tools", "Weaver's Tools", 
+									"Woodcarver's Tools",
+									// Add musical instruments for Monk
+									"Bagpipes", "Drum", "Dulcimer", "Flute", "Glaur", "Hand Drum", 
+									"Longhorn", "Lute", "Lyre", "Pan Flute", "Shawm", "Viol", "Yarting"
+								];
+							} else if (toolType.includes("gaming set")) {
+								toolOptions = [
+									"Dice Set", "Dragonchess Set", "Playing Card Set", "Three-Dragon Ante Set"
+								];
+							}
+							
+							if (toolOptions.length > 0) {
+								toolChoices.push({
+									choose: {
+										count: count,
+										from: toolOptions
+									}
+								});
+							} else {
+								// If we can't parse the type, treat as fixed tool
+								fixedTools.push(Renderer.get().render(tool));
+							}
+						} else {
+							// Regular fixed tool
+							fixedTools.push(Renderer.get().render(tool));
+						}
+					} else if (tool.choose) {
+						toolChoices.push(tool);
+					} else {
+						console.log("Found tool object (not string or choice):", tool);
+					}
+				});
+
+				// Display fixed tools
+				if (fixedTools.length > 0) {
+					parts.push(`<div><strong>Tools:</strong> ${fixedTools.join(", ")}</div>`);
+				}
+
+				// Add tool selection if there are choices
+				console.log("Tool choices found:", toolChoices.length);
+				if (toolChoices.length > 0) {
+					console.log("Adding tool selection HTML...");
+					const toolSelectionHtml = this._renderToolSelection(toolChoices);
+					parts.push(toolSelectionHtml);
+				} else {
+					console.log("No tool choices to display");
+				}
+			}
+
+			// Saving throws (from proficiency array)
+			if (classData.proficiency && classData.proficiency.length) {
+				const savingThrows = classData.proficiency.map(abil => Parser.attAbvToFull(abil)).join(", ");
+				parts.push(`<div><strong>Saving Throws:</strong> ${savingThrows}</div>`);
+			}
+
+			// Skills - check if there are choices to be made
+			const skillChoices = [];
+			const fixedSkills = [];
+			
+			if (proficiencies.skills && proficiencies.skills.length) {
+				proficiencies.skills.forEach(skill => {
+					if (typeof skill === "string") {
+						fixedSkills.push(skill.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "));
+					} else if (skill.choose) {
+						skillChoices.push(skill);
+					}
+				});
+			}
+
+			// Display fixed skills
+			if (fixedSkills.length > 0) {
+				parts.push(`<div><strong>Skills:</strong> ${fixedSkills.join(", ")}</div>`);
+			}
+
+			if (parts.length === 0) {
+				dispProficiencies.innerHTML = `<div class="ve-italic ve-muted">No proficiencies available.</div>`;
+			} else {
+				const basicHtml = `<div class="ve-flex-col ve-p-2 ve-border ve-rounded ve-bg-gray-100">${parts.join("")}</div>`;
+				
+				// Add skill selection if there are choices
+				if (skillChoices.length > 0) {
+					const skillSelectionHtml = this._renderSkillSelection(skillChoices);
+					dispProficiencies.innerHTML = basicHtml + skillSelectionHtml;
+				} else {
+					dispProficiencies.innerHTML = basicHtml;
+				}
+			}
+		};
+
+		// Add hook with delay to avoid conflicts with class selection
+		setTimeout(() => {
+			this._parent._addHookBase("common_ixClass", hkRenderProficiencies);
+			hkRenderProficiencies();
+		}, 100);
+
+		stgProficiencies.innerHTML = `<div class="ve-mb-1 ve-bold ve-text-large">Class Proficiencies</div>`;
+		stgProficiencies.appendChild(dispProficiencies);
+
+		return {stgProficiencies, dispProficiencies};
+	}
+
+	_renderSkillSelection (skillChoices) {
+		let html = "";
+		
+		skillChoices.forEach((skillChoice, index) => {
+			const count = skillChoice.choose.count || 1;
+			const availableSkills = skillChoice.choose.from || [];
+			
+			// Create unique container ID for this skill selection
+			const containerId = `skill-selection-${Date.now()}-${index}`;
+			
+			html += `<div class="ve-mb-3">
+				<div class="ve-bold ve-mb-1">Choose ${count} ${count === 1 ? 'skill' : 'skills'}:</div>
+				<div class="ve-flex" id="${containerId}">`;
+
+			// Create separate dropdowns for each skill choice
+			for (let i = 0; i < count; i++) {
+				html += `
+					<div class="ve-flex-v-center ve-mb-2 ve-mr-2">
+						<div class="ve-flex-v-center ve-btn-group skill-selector-container-${i}" style="min-width: fit-content;">
+							<!-- Skill selector will be inserted here -->
+						</div>
+					</div>`;
+			}
+
+			html += `</div>
+			</div>`;
+
+			// Add JavaScript for handling skill selection with separate dropdowns
+			setTimeout(() => {
+				// Store setFnFilter references for each dropdown
+				const setFnFilters = {};
+				
+				// Get skill data (shared across all dropdowns)
+				const skillData = availableSkills.map(skill => ({
+					name: skill.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
+					original: skill
+				}));
+				
+				for (let i = 0; i < count; i++) {
+					const container = document.querySelector(`#${containerId} .skill-selector-container-${i}`);
+					
+					if (container) {
+						// Create skill selector using existing pattern
+						const skillProp = `common_selectedSkills_${containerId}_${i}`;
+						
+						// Initialize state for skill selection
+						if (!this._parent._state[skillProp]) {
+							this._parent._state[skillProp] = null;
+						}
+						
+						const {wrp: selSkill, setFnFilter: setFnFilterSkill} = ComponentUiUtil.getSelSearchable(
+							this._parent,
+							skillProp,
+							{
+								values: skillData.map((_, ix) => ix),
+								isAllowNull: true,
+								fnDisplay: ix => {
+									const skill = skillData[ix];
+									if (!skill) return "(Unknown)";
+									return skill.name;
+								},
+								asMeta: true,
+							},
+						);
+						
+						container.innerHTML = "";
+						container.appendChild(selSkill);
+						
+						// Store setFnFilter for this dropdown
+						setFnFilters[i] = setFnFilterSkill;
+						
+						// Add filter functionality
+						const doApplyFilterToSelSkill = () => {
+							setFnFilterSkill(() => true);
+						};
+						
+						doApplyFilterToSelSkill();
+						
+						// Update filters when any skill selection changes to remove duplicates
+						this._parent._addHookBase(skillProp, () => {
+							// Update all dropdowns to remove duplicates
+							for (let j = 0; j < count; j++) {
+								const currentSkillProp = `common_selectedSkills_${containerId}_${j}`;
+								const currentSelected = this._parent._state[currentSkillProp];
+								
+								// Update filter for this dropdown
+								if (setFnFilters[j]) {
+									setFnFilters[j](ix => {
+										if (ix == null) return true; // Allow null selection
+										
+										const currentSkillName = skillData[ix].original;
+										
+										// Check if this skill is selected in any other dropdown
+										for (let k = 0; k < count; k++) {
+											if (k !== j) {
+												const otherProp = `common_selectedSkills_${containerId}_${k}`;
+												const otherSel = this._parent._state[otherProp];
+												if (otherSel != null && skillData[otherSel].original === currentSkillName) {
+													return false;
+												}
+											}
+										}
+										
+										return true;
+									});
+								}
+							}
+						});
+					}
+				}
+			}, 100);
+		});
+		
+		return html;
+	}
+
+	_renderToolSelection (toolChoices) {
+		let html = "";
+		
+		toolChoices.forEach((toolChoice, index) => {
+			const count = toolChoice.choose.count || 1;
+			const availableTools = toolChoice.choose.from || [];
+			
+			// Create unique container ID for this tool selection
+			const containerId = `tool-selection-${Date.now()}-${index}`;
+			
+			html += `<div class="ve-mb-3">
+				<div class="ve-bold ve-mb-1">Choose ${count} ${count === 1 ? 'tool' : 'tools'}:</div>
+				<div class="ve-flex" id="${containerId}">`;
+
+			// Create separate dropdowns for each tool choice
+			for (let i = 0; i < count; i++) {
+				html += `
+					<div class="ve-flex-v-center ve-mb-2 ve-mr-2">
+						<div class="ve-flex-v-center ve-btn-group skill-selector-container-${i}" style="min-width: fit-content;">
+							<!-- Tool selector will be inserted here -->
+						</div>
+					</div>`;
+			}
+
+			html += `</div>
+			</div>`;
+
+			// Add JavaScript for handling tool selection with separate dropdowns
+			setTimeout(() => {
+				// Store setFnFilter references for each dropdown
+				const setFnFilters = {};
+				
+				// Get tool data (shared across all dropdowns)
+				const toolData = availableTools.map(tool => ({
+					name: typeof tool === "string" ? tool : tool.name || tool,
+					original: typeof tool === "string" ? tool : tool.name || tool
+				}));
+				
+				for (let i = 0; i < count; i++) {
+					const container = document.querySelector(`#${containerId} .skill-selector-container-${i}`);
+					
+					if (container) {
+						// Create tool selector using existing pattern
+						const toolProp = `common_selectedTools_${containerId}_${i}`;
+						
+						// Initialize state for tool selection
+						if (!this._parent._state[toolProp]) {
+							this._parent._state[toolProp] = null;
+						}
+						
+						const {wrp: selTool, setFnFilter: setFnFilterTool} = ComponentUiUtil.getSelSearchable(
+							this._parent,
+							toolProp,
+							{
+								values: toolData.map((_, ix) => ix),
+								isAllowNull: true,
+								fnDisplay: ix => {
+									const tool = toolData[ix];
+									if (!tool) return "(Unknown)";
+									return tool.name;
+								},
+								asMeta: true,
+							},
+						);
+						
+						container.innerHTML = "";
+						container.appendChild(selTool);
+						
+						// Store setFnFilter for this dropdown
+						setFnFilters[i] = setFnFilterTool;
+						
+						// Add filter functionality
+						const doApplyFilterToSelTool = () => {
+							setFnFilterTool(() => true);
+						};
+						
+						doApplyFilterToSelTool();
+						
+						// Update filters when any tool selection changes to remove duplicates
+						this._parent._addHookBase(toolProp, () => {
+							// Update all dropdowns to remove duplicates
+							for (let j = 0; j < count; j++) {
+								const currentToolProp = `common_selectedTools_${containerId}_${j}`;
+								const currentSelected = this._parent._state[currentToolProp];
+								
+								// Update filter for this dropdown
+								if (setFnFilters[j]) {
+									setFnFilters[j](ix => {
+										if (ix == null) return true; // Allow null selection
+										
+										const currentToolName = toolData[ix].original;
+										
+										// Check if this tool is selected in any other dropdown
+										for (let k = 0; k < count; k++) {
+											if (k !== j) {
+												const otherProp = `common_selectedTools_${containerId}_${k}`;
+												const otherSel = this._parent._state[otherProp];
+												if (otherSel != null && toolData[otherSel].original === currentToolName) {
+													return false;
+												}
+											}
+										}
+										
+										return true;
+									});
+								}
+							}
+						});
+					}
+				}
+			}, 100);
+		});
+		
+		return html;
 	}
 }

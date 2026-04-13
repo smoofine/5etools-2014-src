@@ -81,7 +81,7 @@ export class StatGenUi extends BaseComponent {
 
 		this._modalFilterRaces = opts.modalFilterRaces || new ModalFilterRaces({namespace: "statgen.races", isRadio: true, allData: this._races});
 		this._modalFilterBackgrounds = opts.modalFilterBackgrounds || new ModalFilterBackgrounds({namespace: "statgen.backgrounds", isRadio: true, allData: this._backgrounds});
-		this._modalFilterClasses = opts.modalFilterClasses || null; // No modal filter needed for classes
+		this._modalFilterClasses = opts.modalFilterClasses || new ModalFilterClasses({namespace: "statgen.classes", isRadio: true, allData: this._classes});
 		this._modalFilterFeats = opts.modalFilterFeats || new ModalFilterFeats({namespace: "statgen.feats", isRadio: true, allData: this._feats});
 
 		this._isLevelUp = !!opts.existingScores;
