@@ -371,7 +371,7 @@ class _PageGeneratorCharactercreator extends PageGeneratorGeneric {
 	_page = "charactercreator.html";
 
 	_pageTitle = "Character Creator";
-	_navbarDescription = "Change method on the left, refer to method that appears on the right.";
+	_navbarDescription = "";
 
 	_isFontAwesome = true;
 	_stylesheets = [
