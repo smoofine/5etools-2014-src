@@ -29,3 +29,10 @@ sw-injector.js
 
 # Dev scripts
 dev-*.sh
+
+# Cloudflare files
+wrangle.toml
+.wranglerignore
+
+# Netlify files
+.netlify/

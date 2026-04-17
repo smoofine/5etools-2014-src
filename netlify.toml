@@ -1,0 +1,18 @@
+[build]
+  base = "/"
+  command = "npm run build"
+  publish = "/"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[context.deploy-preview]
+  command = "npm run build"
+
+[context.production]
+  command = "npm run build"
