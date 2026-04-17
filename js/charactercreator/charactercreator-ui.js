@@ -42,6 +42,7 @@ export class StatGenUi extends BaseComponent {
 	 * @param opts.classes
 	 * @param opts.feats
 	 * @param [opts.tabMetasAdditional]
+	 * @param [opts.actionButtons]
 	 * @param [opts.isCharacterMode] Disables some functionality (e.g. changing number of ability scores)
 	 * @param [opts.isFvttMode]
 	 * @param [opts.modalFilterRaces]
@@ -56,12 +57,24 @@ export class StatGenUi extends BaseComponent {
 
 		TabUiUtilSide.decorate(this, {isInitMeta: true});
 
+		// Override tab rendering to hide tab buttons completely
+		this.__renderTabs_addToParent = function ({dispTabTitle, eleParent, tabMetasOut}) {
+			ee`<div class="ve-flex-col ve-w-100 ve-h-100">
+				${dispTabTitle}
+				<div class="ve-flex ve-w-100 ve-h-100 ve-min-h-0">
+					<div class="ve-flex-col ve-w-100 ve-h-100">${tabMetasOut.map(it => it.wrpTab).filter(Boolean)}</div>
+					<div class="ve-flex-col ve-ml-4 ve-pl-2 ve-border-left" id="action-buttons-wrapper"></div>
+				</div>
+			</div>`.appendTo(eleParent);
+		};
+
 		this._races = opts.races;
 		this._backgrounds = opts.backgrounds;
 		this._classes = opts.classes;
 		this._feats = opts.feats;
 		this._languages = opts.languages;
 		this._tabMetasAdditional = opts.tabMetasAdditional;
+		this._actionButtons = opts.actionButtons || [];
 		this._isCharacterMode = opts.isCharacterMode;
 		this._isFvttMode = opts.isFvttMode;
 
@@ -301,6 +314,7 @@ export class StatGenUi extends BaseComponent {
 			].filter(Boolean);
 
 		const tabMetas = this._renderTabs(iptTabMetas, {eleParent: this._isFvttMode ? null : parent});
+		this._tabMetas = tabMetas; // Store for later access
 		if (this._isFvttMode) {
 			if (!this._isLevelUp) {
 				const {propActive: propActiveTab, propProxy: propProxyTabs} = this._getTabProps();
@@ -337,6 +351,19 @@ export class StatGenUi extends BaseComponent {
 
 		this._addHookBase("common_cntAsi", () => this._state.common_pulseAsi = !this._state.common_pulseAsi);
 		this._addHookBase("common_cntFeatsCustom", () => this._state.common_pulseAsi = !this._state.common_pulseAsi);
+
+		// Render action buttons to right
+		if (this._actionButtons.length) {
+			const wrpButtons = parent.find("#action-buttons-wrapper");
+			
+			this._actionButtons.forEach(meta => {
+				const btn = ee`<button class="ve-btn ve-btn-xs ve-br-0 ve-btl-0 ve-bbl-0 ${UiUtil.getBtnClassName(meta.type)} ve-mb-2" ${meta.title ? `title="${meta.title.qq()}"` : ""}>${meta.html}</button>`
+					.onn("click", evt => {
+						if (meta.pFnClick) meta.pFnClick({evt, btn});
+					});
+				btn.appendTo(wrpButtons);
+			});
+		}
 	}
 
 // =================================================================================================

@@ -27,6 +27,7 @@ class StatGenPage {
 			feats,
 			languages,
 			tabMetasAdditional: this._getAdditionalTabMetas(),
+			actionButtons: this._getActionButtons(),
 		});
 		await this._statGenUi.pInit();
 		this._statGenUi.addHookActiveTag(() => this._setHashFromTab());
@@ -47,68 +48,55 @@ class StatGenPage {
 	}
 
 	_getAdditionalTabMetas () {
+		return [];
+	}
+
+	_getActionButtons () {
 		return [
-			new TabUiUtil.TabMeta({
-				type: "buttons",
-				buttons: [
-					{
-						html: `<span class="glyphicon glyphicon-download"></span>`,
-						title: "Save to File",
-						pFnClick: () => {
-							DataUtil.userDownload("statgen", this._statGenUi.getSaveableState(), {fileType: "statgen"});
-						},
-					},
-				],
-			}),
-			new TabUiUtil.TabMeta({
-				type: "buttons",
-				buttons: [
-					{
-						html: `<span class="glyphicon glyphicon-upload"></span>`,
-						title: "Load from File",
-						pFnClick: async () => {
-							const {jsons, errors} = await InputUiUtil.pGetUserUploadJson({expectedFileTypes: ["statgen"]});
+			{
+				html: `<span class="glyphicon glyphicon-download"></span>`,
+				title: "Save to File",
+				type: "primary",
+				pFnClick: () => {
+					DataUtil.userDownload("statgen", this._statGenUi.getSaveableState(), {fileType: "statgen"});
+				},
+			},
+			{
+				html: `<span class="glyphicon glyphicon-upload"></span>`,
+				title: "Load from File",
+				type: "primary",
+				pFnClick: async () => {
+					const {jsons, errors} = await InputUiUtil.pGetUserUploadJson({expectedFileTypes: ["statgen"]});
 
-							DataUtil.doHandleFileLoadErrorsGeneric(errors);
+					DataUtil.doHandleFileLoadErrorsGeneric(errors);
 
-							if (!jsons?.length) return;
-							this._statGenUi.setStateFrom(jsons[0], true);
-						},
-					},
-				],
-			}),
-			new TabUiUtil.TabMeta({
-				type: "buttons",
-				buttons: [
-					{
-						html: `<span class="glyphicon glyphicon-magnet"></span>`,
-						title: "Copy Link",
-						pFnClick: async ({evt, btn}) => {
-							const encoded = `${window.location.href.split("#")[0]}#pointbuy${HASH_PART_SEP}${encodeURIComponent(JSON.stringify(this._statGenUi.getSaveableState()))}`;
-							await MiscUtil.pCopyTextToClipboard(encoded);
-							JqueryUtil.showCopiedEffect(btn);
-						},
-					},
-				],
-			}),
-			new TabUiUtil.TabMeta({
-				type: "buttons",
-				buttons: [
-					{
-						html: `<span class="glyphicon glyphicon-refresh"></span>`,
+					if (!jsons?.length) return;
+					this._statGenUi.setStateFrom(jsons[0], true);
+				},
+			},
+			{
+				html: `<span class="glyphicon glyphicon-magnet"></span>`,
+				title: "Copy Link",
+				type: "primary",
+				pFnClick: async ({evt, btn}) => {
+					const encoded = `${window.location.href.split("#")[0]}#pointbuy${HASH_PART_SEP}${encodeURIComponent(JSON.stringify(this._statGenUi.getSaveableState()))}`;
+					await MiscUtil.pCopyTextToClipboard(encoded);
+					JqueryUtil.showCopiedEffect(btn);
+				},
+			},
+			{
+				html: `<span class="glyphicon glyphicon-refresh"></span>`,
+				title: "Reset All",
+				type: "danger",
+				pFnClick: async () => {
+					if (!await InputUiUtil.pGetUserBoolean({
 						title: "Reset All",
-						type: "danger",
-						pFnClick: async () => {
-							if (!await InputUiUtil.pGetUserBoolean({
-								title: "Reset All",
-								htmlDescription: `<div>This will reset all inputs in all tabs.<br>Are you sure?</div>`,
-							})) return;
+						htmlDescription: `<div>This will reset all inputs in all tabs.<br>Are you sure?</div>`,
+					})) return;
 
-							this._statGenUi.doResetAll();
-						},
-					},
-				],
-			}),
+					this._statGenUi.doResetAll();
+				},
+			},
 		];
 	}
 
