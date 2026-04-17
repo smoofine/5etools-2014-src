@@ -4,7 +4,10 @@ import {StatGenUiRenderLevelOneClass} from "./charactercreator-ui-comp-levelone-
 import {StatGenUiRenderLevelOneRace} from "./charactercreator-ui-comp-levelone-race.js";
 import {StatGenUiRenderableCollectionPbRules} from "./charactercreator-ui-comp-pbrules.js";
 import {MAX_CUSTOM_FEATS, MODE_NONE} from "./charactercreator-ui-consts.js";
-
+import {ModalFilterClasses} from "../filter-classes.js";
+import {ModalFilterRaces} from "../filter-races.js";
+import {ModalFilterBackgrounds} from "../filter-backgrounds.js";
+import {ModalFilterFeats} from "../filter-feats.js";
 
 export class StatGenUi extends BaseComponent {
 	static _STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];

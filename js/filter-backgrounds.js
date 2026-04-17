@@ -127,6 +127,8 @@ class PageFilterBackgrounds extends PageFilterBase {
 
 globalThis.PageFilterBackgrounds = PageFilterBackgrounds;
 
+export {ModalFilterBackgrounds};
+
 class ModalFilterBackgrounds extends ModalFilterBase {
 	/**
 	 * @param opts

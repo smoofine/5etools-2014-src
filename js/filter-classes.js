@@ -311,4 +311,5 @@ class ModalFilterClasses extends ModalFilterBase {
 	}
 }
 
+export {ModalFilterClasses};
 globalThis.ModalFilterClasses = ModalFilterClasses;
