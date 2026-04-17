@@ -1612,15 +1612,15 @@ class TabUiUtilSide extends TabUiUtilBase {
 		};
 
 		obj.__getWrpTab = function ({tabMeta}) {
-			return ee`<div class="ve-flex-col ve-w-100 ve-h-100 ve-ui-tab-side__wrp-tab ${tabMeta.isNoPadding ? "" : "ve-px-3 ve-py-2"} ve-overflow-y-auto"></div>`;
+			return ee`<div class="ve-flex-col ve-w-100 ve-h-100 ve-ui-tab-side__wrp-tab ${tabMeta.isNoPadding ? "" : "ve-px-3 ve-py-2"} ve-overflow-y-auto ve-overflow-x-hidden ve-mobile-lg__overflow-x-hidden"></div>`;
 		};
 
 		obj.__renderTabs_addToParent = function ({dispTabTitle, eleParent, tabMetasOut}) {
 			ee`<div class="ve-flex-col ve-w-100 ve-h-100">
 				${dispTabTitle}
-				<div class="ve-flex ve-w-100 ve-h-100 ve-min-h-0">
-					<div class="ve-flex-col ve-h-100 ve-pt-2">${tabMetasOut.map(it => it.btnTab)}</div>
-					<div class="ve-flex-col ve-w-100 ve-h-100 ve-min-w-0">${tabMetasOut.map(it => it.wrpTab).filter(Boolean)}</div>
+				<div class="ve-flex ve-w-100 ve-h-100 ve-min-h-0 ve-mobile-lg__flex-col">
+					<div class="ve-flex-col ve-h-100 ve-pt-2 ve-mobile-lg__w-100">${tabMetasOut.map(it => it.btnTab)}</div>
+					<div class="ve-flex-col ve-w-100 ve-h-100 ve-min-w-0 ve-mobile-lg__w-100">${tabMetasOut.map(it => it.wrpTab).filter(Boolean)}</div>
 				</div>
 			</div>`.appendTo(eleParent);
 		};
