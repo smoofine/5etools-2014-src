@@ -1,7 +1,7 @@
 import {VetoolsConfig} from "./utils-config/utils-config-config.js";
 import {RenderClassesSidebar} from "./render-class.js";
-
 import {OmnisearchUtilsUi} from "./omnisearch/omnisearch-utils-ui.js";
+// import {PageFilterClasses} from "./filter-classes.js";
 
 class UtilClassesPage {
 	static getColorStyleClasses (entry, {isForceStandardSource, prefix, isSubclass} = {}) {
@@ -308,7 +308,7 @@ class ClassesPage extends MixinComponentGlobalState(MixinBaseComponent(MixinProx
 		this._dataList = [];
 		this._lastScrollFeature = null;
 		this._outlineData = {};
-		this._pageFilter = new PageFilterClasses();
+		this._pageFilter = new globalThis.PageFilterClasses();
 
 		// region subclass list/filter
 		this._listSubclass = null;

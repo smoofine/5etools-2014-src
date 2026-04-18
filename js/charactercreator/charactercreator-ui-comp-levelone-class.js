@@ -373,16 +373,17 @@ export class StatGenUiRenderLevelOneClass extends StatGenUiRenderLevelOneEntityB
 		
 		let html = '<div class="ve-flex-col">';
 		
-		// Add spell counters
+		// Add spell counters with proper limits display
 		html += '<div class="ve-flex ve-mb-2">';
-		html += `<div class="ve-mr-3"><span class="ve-bold">Cantrips:</span> <span id="cantrip-count">0</span>/${spellLimits.cantrips}</div>`;
-		html += `<div><span class="ve-bold">Level 1 Spells:</span> <span id="spell-count">0</span>/${spellLimits.spells}</div>`;
+		html += `<div class="ve-mr-3"><span class="ve-bold">Cantrips:</span> <span id="cantrip-count">0/${spellLimits.cantrips}</span></div>`;
+		const spellLimitDisplay = spellLimits.isPreparedSpells ? "0/?" : `0/${spellLimits.spells}`;
+		html += `<div><span class="ve-bold">Level 1 Spells:</span> <span id="spell-count">${spellLimitDisplay}</span></div>`;
 		html += '</div>';
 
-		// Add spell selection buttons
+		// Add spell selection buttons (following same pattern as class filter)
 		html += '<div class="ve-flex ve-mb-2">';
-		html += `<button class="ve-btn ve-btn-default ve-btn-xs ve-mr-2" id="select-cantrips-btn">Select Cantrips</button>`;
-		html += `<button class="ve-btn ve-btn-default ve-btn-xs" id="select-spells-btn">Select Level 1 Spells</button>`;
+		html += `<button class="ve-btn ve-btn-xs ve-btn-default ve-br-0 ve-pr-2" id="select-cantrips-btn" title="Filter for Cantrips"><span class="glyphicon glyphicon-filter"></span> Select Cantrips</button>`;
+		html += `<button class="ve-btn ve-btn-xs ve-btn-default ve-br-0 ve-pr-2" id="select-spells-btn" title="Filter for Level 1 Spells"><span class="glyphicon glyphicon-filter"></span> Select Level 1 Spells</button>`;
 		html += '</div>';
 
 		// Add selected spells display
@@ -403,26 +404,64 @@ export class StatGenUiRenderLevelOneClass extends StatGenUiRenderLevelOneEntityB
 		// Initialize modal functionality after DOM is ready
 		setTimeout(() => {
 			this._initializeSpellModals(spellLimits);
+			
+			// Add hook to update spell counters when ability scores change
+			if (spellLimits.isPreparedSpells) {
+				this._parent.addHookAbilityScores(() => {
+					this._updateSpellCounters();
+				});
+				
+				// Also add periodic updates as a fallback
+				this._spellCounterInterval = setInterval(() => {
+					this._updateSpellCounters();
+				}, 1000);
+			}
 		}, 100);
 
 		return html;
 	}
 
 	_getClassSpellLimits (className) {
-		// Define spell limits based on class
-		const limits = {
-			"Wizard": { cantrips: 3, spells: 6 },
-			"Cleric": { cantrips: 0, spells: 0 }, // Clerics get all cantrips and prepare spells
-			"Druid": { cantrips: 2, spells: 0 }, // Druids prepare spells
-			"Sorcerer": { cantrips: 4, spells: 2 },
-			"Warlock": { cantrips: 2, spells: 2 },
-			"Bard": { cantrips: 2, spells: 4 },
-			"Paladin": { cantrips: 0, spells: 0 }, // Paladins prepare spells
-			"Ranger": { cantrips: 0, spells: 0 }, // Rangers prepare spells
-			"Artificer": { cantrips: 0, spells: 4 } // Artificers prepare spells
-		};
+		const classData = this._parent.class;
+		if (!classData) return { cantrips: 0, spells: 0 };
+
+		// Get cantrips from cantripProgression array (index 0 = level 1)
+		const cantrips = classData.cantripProgression ? classData.cantripProgression[0] : 0;
+
+		// Get spells known based on spellcasting system
+		let spells = 0;
+		let isPreparedSpells = false;
+		let spellFormula = null;
 		
-		return limits[className] || { cantrips: 0, spells: 0 };
+		if (classData.spellsKnownProgressionFixed) {
+			// Wizard uses spellsKnownProgressionFixed
+			spells = classData.spellsKnownProgressionFixed[0] || 0;
+		} else if (classData.spellsKnownProgression) {
+			// Sorcerer, Warlock, Bard use spellsKnownProgression
+			spells = classData.spellsKnownProgression[0] || 0;
+		} else if (classData.preparedSpells) {
+			// Cleric, Druid, Artificer prepare spells using formulas
+			isPreparedSpells = true;
+			spellFormula = classData.preparedSpells;
+			spells = 0; // No fixed spells known, calculated dynamically
+		}
+
+		return { cantrips, spells, isPreparedSpells, spellFormula };
+	}
+
+	_getSpellcastingAbilityScore (className) {
+		const classData = this._parent.class;
+		if (!classData?.spellcastingAbility) return null;
+
+		const abilityAbbr = classData.spellcastingAbility.toUpperCase();
+		const abilityProp = `common_export_${abilityAbbr.toLowerCase()}`;
+		
+		// Check if ability score is determined
+		const abilityScore = this._parent._state[abilityProp];
+		
+		if (abilityScore === undefined || abilityScore === null) return null;
+		
+		return abilityScore;
 	}
 
 	async _initializeSpellModals (spellLimits) {
@@ -440,76 +479,125 @@ export class StatGenUiRenderLevelOneClass extends StatGenUiRenderLevelOneEntityB
 			this._parent._state[spellProp] = [];
 		}
 
-		// Get modal buttons
+		// Initialize spell modal filters dynamically based on current class
+		if (this._parent._modalFilterCantrips && this._parent._modalFilterCantrips.pageFilter && this._parent._modalFilterCantrips.pageFilter.filterBox) {
+			this._parent._modalFilterCantrips.pageFilter.filterBox.off(FILTER_BOX_EVNT_VALCHANGE);
+		}
+		if (this._parent._modalFilterSpells && this._parent._modalFilterSpells.pageFilter && this._parent._modalFilterSpells.pageFilter.filterBox) {
+			this._parent._modalFilterSpells.pageFilter.filterBox.off(FILTER_BOX_EVNT_VALCHANGE);
+		}
+
+		// Load all spells like spells.js does - let filter system handle filtering
+		const allSpells = await DataLoader.pCacheAndGetAllSite(UrlUtil.PG_SPELLS);
+		allSpells.forEach(spell => DataUtil.spell._mutEntity(spell));
+		
+		// Mutate spells for filtering - handle case where PageFilterSpells might not be loaded yet
+		try {
+			if (PageFilterSpells && PageFilterSpells.mutateForFilters) {
+				allSpells.forEach(spell => PageFilterSpells.mutateForFilters(spell));
+			}
+		} catch (e) {
+			console.warn("PageFilterSpells not available, skipping spell mutation:", e);
+		}
+		
+		// Create cantrip modal filter with ALL spells (no pre-filtering)
+		this._parent._modalFilterCantrips = new ModalFilterSpells({
+			isRadio: false,
+			namespace: `charactercreator_${className}_cantrips`,
+			allData: allSpells,
+		});
+
+		// Create spell modal filter with ALL spells (no pre-filtering)
+		this._parent._modalFilterSpells = new ModalFilterSpells({
+			isRadio: false,
+			namespace: `charactercreator_${className}_spells`,
+			allData: allSpells,
+		});
+
+		// Initialize filter caches to make pills interactive
+		await this._parent._modalFilterCantrips.pPopulateHiddenWrapper();
+		await this._parent._modalFilterSpells.pPopulateHiddenWrapper();
+
+		// Set up filter change handlers
+		const doApplyCantripFilter = () => {
+			const cantripCountEl = document.querySelector("#cantrip-count");
+			if (cantripCountEl) {
+				// Get currently selected cantrips from state
+				const currentCantrips = this._parent._state[cantripProp] || [];
+				cantripCountEl.textContent = `${currentCantrips.length}/${spellLimits.cantrips}`;
+			}
+		};
+
+		const doApplySpellFilter = () => {
+			const spellCountEl = document.querySelector("#spell-count");
+			if (spellCountEl) {
+				// Get currently selected spells from state
+				const currentSpells = this._parent._state[spellProp] || [];
+				if (spellLimits.isPreparedSpells) {
+					const abilityScore = this._getSpellcastingAbilityScore(className);
+					if (abilityScore !== null) {
+						const modifier = Parser.getAbilityModifier(abilityScore);
+						const maxSpells = this._calculatePreparedSpells(spellLimits.spellFormula, 1, modifier);
+						spellCountEl.textContent = `${currentSpells.length}/${maxSpells}`;
+					} else {
+						spellCountEl.textContent = `${currentSpells.length}/?`;
+					}
+				} else {
+					spellCountEl.textContent = `${currentSpells.length}/${spellLimits.spells}`;
+				}
+			}
+		};
+
+		// Get modal buttons and set up click handlers following same pattern as class filter
 		const cantripBtn = document.querySelector("#select-cantrips-btn");
 		const spellBtn = document.querySelector("#select-spells-btn");
 
 		if (cantripBtn) {
 			cantripBtn.addEventListener("click", async () => {
-				// Load all spells first
-				const allSpells = await DataLoader.pCacheAndGetAllSite(UrlUtil.PG_SPELLS);
-				
-				// Mutate spells for filtering
-				allSpells.forEach(spell => PageFilterSpells.mutateForFilters(spell));
-				
-				// Filter to only cantrips available to this class
-				const classCantrips = allSpells.filter(spell => 
-					spell.level === 0 && 
-					spell._fClasses && 
-					spell._fClasses.some(cls => cls.item.toLowerCase() === className.toLowerCase())
-				);
-
-				const modalFilter = new ModalFilterSpells({
-					isRadio: false,
-					namespace: `charactercreator_${className}_cantrips`,
-					allData: classCantrips,
+				const selected = await this._parent._modalFilterCantrips.pGetUserSelection({
+					filterExpression: `class=${className.toLowerCase()}|level=0`
 				});
-				
-				const selectedCantrips = await modalFilter.pGetUserSelection();
+				if (selected == null || !selected.length) return;
 
-				if (selectedCantrips) {
-					this._parent._state[cantripProp] = selectedCantrips.map(item => item.values.hash);
-					await this._updateSelectedSpellsDisplay("cantrips", this._parent._state[cantripProp]);
-					this._updateSpellCounters();
-				}
+				this._parent._state[cantripProp] = selected.map(item => item.values.hash);
+				await this._updateSelectedSpellsDisplay("cantrips", this._parent._state[cantripProp]);
+				doApplyCantripFilter();
 			});
 		}
 
 		if (spellBtn) {
 			spellBtn.addEventListener("click", async () => {
-				// Load all spells first
-				const allSpells = await DataLoader.pCacheAndGetAllSite(UrlUtil.PG_SPELLS);
-				
-				// Mutate spells for filtering
-				allSpells.forEach(spell => PageFilterSpells.mutateForFilters(spell));
-				
-				// Filter to only level 1 spells available to this class
-				const classSpells = allSpells.filter(spell => 
-					spell.level === 1 && 
-					spell._fClasses && 
-					spell._fClasses.some(cls => cls.item.toLowerCase() === className.toLowerCase())
-				);
-
-				const modalFilter = new ModalFilterSpells({
-					isRadio: false,
-					namespace: `charactercreator_${className}_spells`,
-					allData: classSpells,
-				});
-				
-				const selectedSpells = await modalFilter.pGetUserSelection();
-
-				if (selectedSpells) {
-					this._parent._state[spellProp] = selectedSpells.map(item => item.values.hash);
-					await this._updateSelectedSpellsDisplay("spells", this._parent._state[spellProp]);
-					this._updateSpellCounters();
+				// Check if ability scores are determined for prepared spell classes
+				if (spellLimits.isPreparedSpells) {
+					const abilityScore = this._getSpellcastingAbilityScore(className);
+					if (abilityScore === null) {
+						// Show message to complete ability scores first
+						const abilityName = classData.spellcastingAbility.toUpperCase();
+						JqueryUtil.doToast({
+							type: "info",
+							content: `Please complete your ability scores first, then return here to select spells. Your ${abilityName} score determines how many spells you can prepare.`,
+							autoHideTime: 8000
+						});
+						return;
+					}
 				}
+
+				const selected = await this._parent._modalFilterSpells.pGetUserSelection({
+					filterExpression: `class=${className.toLowerCase()}|level=1`
+				});
+				if (selected == null || !selected.length) return;
+
+				this._parent._state[spellProp] = selected.map(item => item.values.hash);
+				await this._updateSelectedSpellsDisplay("spells", this._parent._state[spellProp]);
+				doApplySpellFilter();
 			});
 		}
 
 		// Initialize displays
 		await this._updateSelectedSpellsDisplay("cantrips", this._parent._state[cantripProp] || []);
 		await this._updateSelectedSpellsDisplay("spells", this._parent._state[spellProp] || []);
-		this._updateSpellCounters();
+		doApplyCantripFilter();
+		doApplySpellFilter();
 	}
 
 	async _updateSelectedSpellsDisplay (type, selectedSpells) {
@@ -531,7 +619,7 @@ export class StatGenUiRenderLevelOneClass extends StatGenUiRenderLevelOneEntityB
 			return `
 				<div class="ve-flex-v-center ve-py-1 ve-px-2 ve-border ve-rounded ve-mb-1 ve-relative">
 					<div class="ve-bold">${spell.name}</div>
-					<button class="ve-btn ve-btn-xs ve-btn-default ve-ml-2" onclick="this.parentElement.remove()">×</button>
+					<button class="ve-btn ve-btn-xs ve-btn-default ve-ml-2" onclick="this.parentElement.remove(); window._charactercreatorLevelOneClass._updateSpellCounters('${type}')">×</button>
 				</div>
 			`;
 		});
@@ -540,22 +628,54 @@ export class StatGenUiRenderLevelOneClass extends StatGenUiRenderLevelOneEntityB
 		container.innerHTML = html;
 	}
 
-	_updateSpellCounters () {
-		const classData = this._parent.class;
-		const className = classData.name;
-		const spellLimits = this._getClassSpellLimits(className);
+	
+	_calculatePreparedSpells (formula, level, modifier) {
+		// Parse and evaluate spell preparation formulas
+		// Examples: "<$level$> + <$wis_mod$>" or "<$level$> / 2 + <$int_mod$>"
 		
-		const cantripProp = `common_selectedCantrips_${className}`;
-		const spellProp = `common_selectedSpells_${className}`;
+		let result = formula;
 		
-		const cantripCount = this._parent._state[cantripProp]?.length || 0;
-		const spellCount = this._parent._state[spellProp]?.length || 0;
+		// Replace level placeholder
+		result = result.replace(/<\$level\$>/g, level);
 		
-		const cantripCountEl = document.querySelector("#cantrip-count");
-		const spellCountEl = document.querySelector("#spell-count");
+		// Replace ability modifier placeholders
+		const modStr = modifier >= 0 ? `+${modifier}` : `${modifier}`;
+		result = result.replace(/<\$[a-z_]+mod\$>/g, modStr);
 		
-		if (cantripCountEl) cantripCountEl.textContent = cantripCount;
-		if (spellCountEl) spellCountEl.textContent = spellCount;
+		// Evaluate expression safely
+		try {
+			// Handle specific formula patterns
+			if (result.includes('/')) {
+				// Handle division formulas like "1 / 2 + 3"
+				const parts = result.split('+').map(p => p.trim());
+				let total = 0;
+				
+				parts.forEach(part => {
+					if (part.includes('/')) {
+						const [num, denom] = part.split('/').map(p => p.trim());
+						const division = parseFloat(num) / parseFloat(denom);
+						total += division;
+					} else {
+						total += parseFloat(part) || 0;
+					}
+				});
+				
+				const calculated = Math.floor(total);
+				// Ensure minimum of 1 spell for all prepared spellcasters at level 1
+				const minimum = level === 1 ? 1 : 0;
+				return Math.max(minimum, calculated);
+			} else {
+				// Handle simple addition formulas like "1 + 3"
+				const parts = result.split('+').map(p => p.trim());
+				const total = parts.reduce((sum, part) => sum + (parseFloat(part) || 0), 0);
+				// Ensure minimum of 1 spell for all prepared spellcasters at level 1
+				const minimum = level === 1 ? 1 : 0;
+				return Math.max(minimum, total);
+			}
+		} catch (e) {
+			console.warn("Failed to evaluate spell formula:", formula, e);
+			return 0;
+		}
 	}
 
 	async _findSpellByHash (hash) {

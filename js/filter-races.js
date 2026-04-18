@@ -229,8 +229,6 @@ class PageFilterRaces extends PageFilterBase {
 
 globalThis.PageFilterRaces = PageFilterRaces;
 
-export {ModalFilterRaces};
-
 class ModalFilterRaces extends ModalFilterBase {
 	/**
 	 * @param opts

@@ -154,8 +154,6 @@ class PageFilterFeats extends PageFilterBase {
 
 globalThis.PageFilterFeats = PageFilterFeats;
 
-export {ModalFilterFeats};
-
 class ModalFilterFeats extends ModalFilterBase {
 	/**
 	 * @param opts

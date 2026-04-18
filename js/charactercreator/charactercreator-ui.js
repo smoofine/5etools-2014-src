@@ -4,10 +4,6 @@ import {StatGenUiRenderLevelOneClass} from "./charactercreator-ui-comp-levelone-
 import {StatGenUiRenderLevelOneRace} from "./charactercreator-ui-comp-levelone-race.js";
 import {StatGenUiRenderableCollectionPbRules} from "./charactercreator-ui-comp-pbrules.js";
 import {MAX_CUSTOM_FEATS, MODE_NONE} from "./charactercreator-ui-consts.js";
-import {ModalFilterClasses} from "../filter-classes.js";
-import {ModalFilterRaces} from "../filter-races.js";
-import {ModalFilterBackgrounds} from "../filter-backgrounds.js";
-import {ModalFilterFeats} from "../filter-feats.js";
 
 export class StatGenUi extends BaseComponent {
 	static _STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
@@ -95,10 +91,14 @@ export class StatGenUi extends BaseComponent {
 			this._IX_TAB_MANUAL = cnt;
 		}
 
-		this._modalFilterRaces = opts.modalFilterRaces || new ModalFilterRaces({namespace: "statgen.races", isRadio: true, allData: this._races});
-		this._modalFilterBackgrounds = opts.modalFilterBackgrounds || new ModalFilterBackgrounds({namespace: "statgen.backgrounds", isRadio: true, allData: this._backgrounds});
-		this._modalFilterClasses = opts.modalFilterClasses || new ModalFilterClasses({namespace: "statgen.classes", isRadio: true, allData: this._classes});
-		this._modalFilterFeats = opts.modalFilterFeats || new ModalFilterFeats({namespace: "statgen.feats", isRadio: true, allData: this._feats});
+		this._modalFilterRaces = opts.modalFilterRaces || new globalThis.ModalFilterRaces({namespace: "statgen.races", isRadio: true, allData: this._races});
+		this._modalFilterBackgrounds = opts.modalFilterBackgrounds || new globalThis.ModalFilterBackgrounds({namespace: "statgen.backgrounds", isRadio: true, allData: this._backgrounds});
+		this._modalFilterClasses = opts.modalFilterClasses || new globalThis.ModalFilterClasses({namespace: "statgen.classes", isRadio: true, allData: this._classes});
+		this._modalFilterFeats = opts.modalFilterFeats || new globalThis.ModalFilterFeats({namespace: "statgen.feats", isRadio: true, allData: this._feats});
+		
+		// Initialize spell modal filters (will be populated dynamically based on class)
+		this._modalFilterCantrips = null;
+		this._modalFilterSpells = null;
 
 		this._isLevelUp = !!opts.existingScores;
 		this._existingScores = opts.existingScores;
@@ -781,16 +781,27 @@ export class StatGenUi extends BaseComponent {
 		const modeSelector = ee`<div class="ve-flex ve-w-100 ve-pb-2"></div>`;
 		
 		methodTabs.forEach((tabMeta) => {
-			const radioLabel = ee`<label class="ve-flex-v-center ve-mr-5 ve-statgen-mode-selector">
-				<input type="radio" name="statgen-mode" value="${tabMeta.ix}" class="ve-mr-2" ${tabMeta.ix === (this.ixActiveTab || 0) ? 'checked' : ''}>
-				<span>${tabMeta.name}</span>
-			</label>`;
+			const modeBtn = ee`<button class="ve-btn ve-btn-xs ve-btn-default ve-mr-2 ${tabMeta.ix === (this.ixActiveTab || 0) ? 've-btn-primary' : ''}" type="button">
+				${tabMeta.name}
+			</button>`;
 			
-			radioLabel.onn('click', () => {
-				this.ixActiveTab = tabMeta.ix;
+			modeBtn.onn('mousedown', (e) => {
+				e.preventDefault();
 			});
 			
-			modeSelector.append(radioLabel);
+			modeBtn.onn('click', () => {
+				this.ixActiveTab = tabMeta.ix;
+				
+				// Update button states
+				modeSelector.querySelectorAll('button').forEach(btn => {
+					btn.classList.remove('ve-btn-primary');
+					btn.classList.add('ve-btn-default');
+				});
+				modeBtn.classList.remove('ve-btn-default');
+				modeBtn.classList.add('ve-btn-primary');
+			});
+			
+			modeSelector.append(modeBtn);
 		});
 		
 		return modeSelector;

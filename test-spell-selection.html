@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Spell Selection</title>
+    <script>
+        // Test to verify spell selection button functionality
+        window.addEventListener('load', () => {
+            console.log('Testing spell selection buttons...');
+            
+            // Check if buttons exist
+            const cantripBtn = document.querySelector("#select-cantrips-btn");
+            const spellBtn = document.querySelector("#select-spells-btn");
+            
+            console.log('Cantrip button found:', !!cantripBtn);
+            console.log('Spell button found:', !!spellBtn);
+            
+            if (cantripBtn) {
+                console.log('Cantrip button has click listener:', cantripBtn.onclick !== null);
+            }
+            if (spellBtn) {
+                console.log('Spell button has click listener:', spellBtn.onclick !== null);
+            }
+        });
+    </script>
+</head>
+<body>
+    <div id="class-spells-container">
+        <button id="select-cantrips-btn">Select Cantrips</button>
+        <button id="select-spells-btn">Select Level 1 Spells</button>
+    </div>
+</body>
+</html>
