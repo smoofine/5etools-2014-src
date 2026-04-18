@@ -70,7 +70,7 @@ export class StatGenUiRenderLevelOneRace extends StatGenUiRenderLevelOneEntityBa
 			this._parent,
 			"common_isShowTashasRules",
 			{
-				html: `<button class="ve-btn ve-btn-xxs ve-btn-default ve-small ve-p-0 ve-statgen-shared__btn-toggle-tashas-rules ve-flex-vh-center" title="Toggle &quot;Customizing Your Origin&quot; Section"><span class="glyphicon glyphicon-eye-open"></span></button>`,
+				html: `<button class="ve-btn ve-btn-xxs ve-btn-default ve-small ve-p-0 ve-statgen-shared__btn-toggle-tashas-rules ve-flex-vh-center ve-mobile-lg__min-w-0" title="Toggle &quot;Customizing Your Origin&quot; Section" data-component-name="&lt;button /&gt;"><span class="glyphicon glyphicon-eye-open" data-component-name="&lt;span /&gt;"></span></button>`,
 			},
 		);
 
@@ -80,7 +80,7 @@ export class StatGenUiRenderLevelOneRace extends StatGenUiRenderLevelOneEntityBa
 				${ComponentUiUtil.getCbBool(this._parent, "common_isTashas")}
 			</label>
 
-			<div class="ve-flex">
+			<div class="ve-flex ve-flex-wrap">
 				<div class="ve-small ve-muted ve-italic ve-mr-1">${Renderer.get().render(`An {@variantrule Customizing Your Origin|TCE|optional rule}`)}</div>
 				${btnToggleTashasPin}
 				<div class="ve-small ve-muted ve-italic ve-ml-1">${Renderer.get().render(`from Tasha's Cauldron of Everything, page 8.`)}</div>
@@ -93,7 +93,7 @@ export class StatGenUiRenderLevelOneRace extends StatGenUiRenderLevelOneEntityBa
 		const dispTashas = ee`<div class="ve-flex-col"><div class="ve-italic ve-muted">Loading...</div></div>`;
 		DataLoader.pCacheAndGet(UrlUtil.PG_VARIANTRULES, Parser.SRC_TCE, UrlUtil.URL_TO_HASH_BUILDER[UrlUtil.PG_VARIANTRULES]({name: "Customizing Your Origin", source: Parser.SRC_TCE}))
 			.then(rule => {
-				ee(dispTashas.empty())`${Renderer.hover.getHoverContent_stats(UrlUtil.PG_VARIANTRULES, rule)}<hr class="ve-hr-3">`;
+				ee(dispTashas.empty())`${Renderer.hover.getHoverContent_stats(UrlUtil.PG_VARIANTRULES, rule)}<hr class="ve-hr-3 ve-mobile-lg__w-100">`;
 			});
 		const hkIsShowTashas = () => {
 			dispTashas.toggleVe(this._parent._state.common_isShowTashasRules && this._parent._state.common_isAllowTashasRules);

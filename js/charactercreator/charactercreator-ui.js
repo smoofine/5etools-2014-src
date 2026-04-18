@@ -61,9 +61,9 @@ export class StatGenUi extends BaseComponent {
 		this.__renderTabs_addToParent = function ({dispTabTitle, eleParent, tabMetasOut}) {
 			ee`<div class="ve-flex-col ve-w-100 ve-h-100">
 				${dispTabTitle}
-				<div class="ve-flex ve-w-100 ve-h-100 ve-min-h-0">
+				<div class="ve-flex ve-w-100 ve-h-100 ve-min-h-0 ve-mobile-lg__flex-col">
 					<div class="ve-flex-col ve-w-100 ve-h-100">${tabMetasOut.map(it => it.wrpTab).filter(Boolean)}</div>
-					<div class="ve-flex-col ve-ml-4 ve-pl-2 ve-border-left" id="action-buttons-wrapper"></div>
+					<div class="ve-flex-col ve-ml-4 ve-pl-2 ve-border-left ve-mobile-lg__ml-0 ve-mobile-lg__pl-0 ve-mobile-lg__border-left-0" id="action-buttons-wrapper"></div>
 				</div>
 			</div>`.appendTo(eleParent);
 		};
